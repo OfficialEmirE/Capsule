@@ -45,7 +45,7 @@ public class GameSelectionScreen extends Screen {
 		titlePanel.add(capsuleLogo);
 		
 		String username = Capsule.instance.account.getUsername();
-		LinkButton linkableText = new LinkButton(username, 0, 10, username.length() * 7, 16).setURI(URI.create("https://capsule.net.tr/profile/?username=" + username));
+		LinkButton linkableText = new LinkButton(username, 0, 10, username.length() * 7, 16).setURI(URI.create("http://capsule.net.tr/profile/?username=" + username));
 		linkableText.setLocation(width - linkableText.width - 110, 10);
 		titlePanel.add(linkableText);
 		
@@ -65,7 +65,7 @@ public class GameSelectionScreen extends Screen {
 		this.getContentPane().add(titlePanel);
 	
 		Panel gamesPanel = new Panel(0, 60, width, engine.getHeight() - 60);
-		gamesPanel.setBackground(new RamdomPositionBg(gamesPanelBg));
+		gamesPanel.setBackground(new RandomPositionBg(gamesPanelBg));
 		this.getContentPane().add(gamesPanel);
 		
 		loadGameList();
@@ -133,7 +133,7 @@ public class GameSelectionScreen extends Screen {
 	
 	private synchronized void loadGameList() {
 		new Thread(() -> {
-			JSONObject gamesData = new JSONObject(Util.getWebData("https://capsule.net.tr/api/v1/games/"));
+			JSONObject gamesData = new JSONObject(Util.getWebData("http://capsule.net.tr/api/v1/games/"));
 			
 			if (!gamesData.getString("status").equals("success")) {
 				System.err.println("Failed to fetch games data: " + gamesData.getString("message"));

@@ -11,10 +11,9 @@ import java.util.concurrent.Future;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
-import com.jvisualscripting.Engine;
-
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.SystemInfo;
+import me.ramazanenescik04.diken.game.Config;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.EnumResource;
 import me.ramazanenescik04.diken.resource.IOResource;
@@ -22,8 +21,6 @@ import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
 import net.capsule.gui.GameSelectionScreen;
 import net.capsule.gui.LoginScreen;
-import net.capsule.scripting.nodes.BitmapCreateVariable;
-import net.capsule.scripting.pins.BitmapPin;
 import net.capsule.util.Util;
 
 public class Capsule {
@@ -33,7 +30,6 @@ public class Capsule {
 	
 	//Oyun Motorları
 	public DikenEngine gameEngine;
-	public Engine scriptEngine;
 	
 	public static Capsule instance;
 	
@@ -41,7 +37,7 @@ public class Capsule {
 		frame = new JFrame("Capsule");
 		Canvas canvas = new Canvas();
 		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		frame.setIconImage(Util.getImageWeb(URI.create("https://capsule.net.tr/favicon.png")));
+		frame.setIconImage(Util.getImageWeb(URI.create("http://capsule.net.tr/favicon.png")));
 		frame.setSize(320 * 4, 240 * 4);
 		frame.add(canvas);
 		frame.setLocationRelativeTo(null);
@@ -49,13 +45,7 @@ public class Capsule {
 		frame.setVisible(true);
 		
 		this.gameEngine = new DikenEngine(canvas, 320 * 2, 240 * 2, 2);
-		this.gameEngine.start();	
-		
-		this.scriptEngine = Engine.getDefault();
-		
-		this.scriptEngine.registerNodeType(1000, "Variable", "Bitmap", BitmapCreateVariable.class);
-		
-		this.scriptEngine.registerPinType(1000, BitmapPin.class);
+		this.gameEngine.start();
 		
 		frame.addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
@@ -95,8 +85,6 @@ public class Capsule {
 	}
 	
 	public static void main(String[] args) {
-		instance = new Capsule();
-		
 		try {
 			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
 			   Util.findLinuxHomeDirectory();
@@ -119,10 +107,14 @@ public class Capsule {
 			if (!game_dir.exists()) {
 				game_dir.mkdir();
 			}
+			
+			Config.defaultConfigFile = new File(Util.getDirectory(), "config.dat");
 		} catch (Exception var10) {
 			var10.printStackTrace();
 			System.exit(1);
 		}
+		
+		instance = new Capsule();
 		
 		Map<String, String> argMap = parseArgs(args);
 		

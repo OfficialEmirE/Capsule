@@ -6,7 +6,7 @@ import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.gui.screen.IBackground;
 import me.ramazanenescik04.diken.resource.Bitmap;
 
-public class RamdomPositionBg implements IBackground {
+public class RandomPositionBg implements IBackground {
     private final Bitmap sprite;
     private final DikenEngine engine;
     
@@ -21,7 +21,7 @@ public class RamdomPositionBg implements IBackground {
     private final float acceleration = 0.05f; // Hızlanma/Yavaşlama hassasiyeti
     private final float maxSpeed = 3.0f;     // Maksimum hız
 
-    public RamdomPositionBg(Bitmap gamesPanelBg) {
+    public RandomPositionBg(Bitmap gamesPanelBg) {
         this.sprite = gamesPanelBg;
         this.engine = DikenEngine.getEngine();
         pickNewTargetSpeed();
