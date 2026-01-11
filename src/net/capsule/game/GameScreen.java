@@ -27,15 +27,7 @@ public class GameScreen extends Screen {
 	
 	public void openScreen() {
 		chatMessageList = new ArrayList<>();
-		theWorld = new World("TestGame", engine.getWidth(), engine.getHeight() ) {
-			@Override
-			public void tick(DikenEngine engine) {
-				super.tick(engine);
-				if (thePlayer.followCamera) {
-					thePlayer.centerCamera(this, engine);
-				}
-			}
-		};
+		theWorld = new World("TestGame", engine.getWidth(), engine.getHeight());
 		theWorld.setBounds(0, 0, engine.getWidth(), engine.getHeight());
 		thePlayer.setDebugRenderer(true);
 		theWorld.addNode(new Part(100, 100, 200, 200) {
@@ -105,6 +97,7 @@ public class GameScreen extends Screen {
 		
 		if (!chatBarEnabled && !pauseMenuEnabled) {
 			if (eventKey == Keyboard.KEY_DIVIDE) {
+				chatBar.setFocused(true);
 				this.getContentPane().add(chatBar);
 				chatBarEnabled = true;
 			} else if (eventKey == Keyboard.KEY_ESCAPE) {
@@ -113,6 +106,7 @@ public class GameScreen extends Screen {
 			}
 		} else if (chatBarEnabled && !pauseMenuEnabled) {
 			if (eventKey == Keyboard.KEY_ESCAPE || eventKey == Keyboard.KEY_RETURN) {
+				chatBar.setFocused(false);
 				if (eventKey == Keyboard.KEY_RETURN) {
 					sendMessage(Capsule.instance.account.getUsername() + ": " + chatBar.text);
 				}
@@ -132,9 +126,13 @@ public class GameScreen extends Screen {
 	public void tick() {
 		super.tick();
 		
-		if (thePlayer.canMove && pauseMenuEnabled) {
+		if (thePlayer.followCamera) {
+			thePlayer.centerCamera(this.theWorld, engine);
+		}
+		
+		if (thePlayer.canMove && (pauseMenuEnabled || chatBarEnabled)) {
 			thePlayer.canMove = false;
-		} else if (!thePlayer.canMove && !pauseMenuEnabled) {
+		} else if (!thePlayer.canMove && !(pauseMenuEnabled || chatBarEnabled)) {
 			thePlayer.canMove = true;
 		}
 	}

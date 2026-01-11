@@ -7,6 +7,7 @@ import javax.swing.JOptionPane;
 
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.PasswordField;
+import me.ramazanenescik04.diken.gui.compoment.Text;
 import me.ramazanenescik04.diken.gui.compoment.TextField;
 import me.ramazanenescik04.diken.gui.screen.Screen;
 import me.ramazanenescik04.diken.resource.Bitmap;
@@ -22,6 +23,7 @@ public class LoginScreen extends Screen {
 	private TextField usernameField;
 	private PasswordField passwordField;
 	private Bitmap capsuleLogoImage;
+	private String statusMessage;
 
 	private boolean finished;
 
@@ -33,7 +35,7 @@ public class LoginScreen extends Screen {
 			String password = passwordField.getText();
 		
 			if (username.isEmpty() || password.isEmpty()) {
-				JOptionPane.showMessageDialog(Capsule.instance.frame, "Please enter your username and password.");
+				this.statusMessage = "Username and password cannot be empty.";
 				return null;
 			}
 			
@@ -110,6 +112,9 @@ public class LoginScreen extends Screen {
 		
 		if (capsuleLogoImage != null) {
 			bitmap.draw(capsuleLogoImage, (engine.getWidth() - capsuleLogoImage.w) / 2, 50);
+		}
+		if (statusMessage != null) {
+			bitmap.drawText(statusMessage, engine.getWidth() / 2 - Text.stringBitmapWidth(statusMessage, this.engine.defaultFont) / 2, engine.getHeight() / 2 + 90, false);
 		}
 		
 		bitmap.drawText("Username:", engine.getWidth() / 2 - 100, engine.getHeight() / 2 - 35, false);

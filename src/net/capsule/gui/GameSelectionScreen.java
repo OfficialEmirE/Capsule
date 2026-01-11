@@ -50,7 +50,7 @@ public class GameSelectionScreen extends Screen {
 		titlePanel.add(linkableText);
 		
 		Button logoffButton = new Button("Logoff", titlePanel.width - 100, 10, 80, 16).setRunnable(() -> {
-			int quitting = JOptionPane.showConfirmDialog(Capsule.instance.frame, "Are you sure you want to logoff?", "Logoff Confirmation", 
+			int quitting = JOptionPane.showConfirmDialog(null, "Are you sure you want to logoff?", "Logoff Confirmation", 
 					JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			
 			if (quitting == JOptionPane.YES_OPTION) {

@@ -1,22 +1,26 @@
 package net.capsule;
 
-import java.awt.Canvas;
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.SystemInfo;
+import me.ramazanenescik04.diken.game.Animation;
 import me.ramazanenescik04.diken.game.Config;
+import me.ramazanenescik04.diken.gui.window.OptionWindow;
+import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.EnumResource;
 import me.ramazanenescik04.diken.resource.IOResource;
+import me.ramazanenescik04.diken.resource.IResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
 import net.capsule.gui.GameSelectionScreen;
@@ -24,67 +28,34 @@ import net.capsule.gui.LoginScreen;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final String VERSION = "0.1";
 	public Account account;
-	public JFrame frame;
 	
 	//Oyun Motorları
 	public DikenEngine gameEngine;
 	
 	public static Capsule instance;
 	
-	public Capsule() {
-		frame = new JFrame("Capsule");
-		Canvas canvas = new Canvas();
-		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		frame.setIconImage(Util.getImageWeb(URI.create("http://capsule.net.tr/favicon.png")));
-		frame.setSize(320 * 4, 240 * 4);
-		frame.add(canvas);
-		frame.setLocationRelativeTo(null);
-		frame.setResizable(true);	
-		frame.setVisible(true);
-		
-		this.gameEngine = new DikenEngine(canvas, 320 * 2, 240 * 2, 2);
-		this.gameEngine.start();
-		
-		frame.addWindowListener(new java.awt.event.WindowAdapter() {
-			@Override
-			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-				int quitting = JOptionPane.showConfirmDialog(frame, "Are you sure you want to exit?", "Exit Confirmation", 
-						JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-				if (quitting == JOptionPane.YES_OPTION) {
-					close();
-				} else {
-					return;
-				}
-			}
+	public Capsule() {		
+		this.gameEngine = new DikenEngine(null, 320 * 2, 240 * 2, 2);
+		this.gameEngine.setTitle("Capsule");
+		try {
+			this.gameEngine.setIcon((Bitmap) IOResource.loadResource(URI.create("http://capsule.net.tr/favicon.png").toURL().openStream(), EnumResource.IMAGE));
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {}
+		this.gameEngine.addOnCloseRunnable(() -> {
+			System.exit(0);
 		});
+		this.gameEngine.start();
 	}
 	
 	public void close() {
 		this.gameEngine.close();
-		
-		Thread quitThread = new Thread(() -> {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} finally {
-				frame.dispose();
-				
-				Account account = Capsule.this.account;
-				if (account != null) {
-					account.saveAccountLocalFile();
-				}
-				
-				System.exit(0);
-			}
-		});
-		
-		quitThread.start();
 	}
 	
 	public static void main(String[] args) {
+		loadResources();
+		
 		try {
 			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
 			   Util.findLinuxHomeDirectory();
@@ -139,7 +110,11 @@ public class Capsule {
 			instance.account = account_1;
 		}
 		
+		Capsule.instance.gameEngine.wManager.addWindow(new OptionWindow("Welcome to Capsule!", "Welcome", null));
+		
 		if (instance.account == null) {
+			
+			//TODO burası yeniden yazılacak
 			LoginScreen loginScreen = new LoginScreen();
 			Capsule.instance.gameEngine.setCurrentScreen(loginScreen);
 			
@@ -155,7 +130,7 @@ public class Capsule {
 			try {
 				Account account_ = accountFuture.get();
 				if (account_ == null) {
-					JOptionPane.showMessageDialog(Capsule.instance.frame, "Your Account Password and Username Are Incorrect!");
+					JOptionPane.showMessageDialog(null, "Your Account Password and Username Are Incorrect!");
 					System.exit(0);
 				}
 				
@@ -182,6 +157,31 @@ public class Capsule {
 			}
 			Capsule.instance.gameEngine.setCurrentScreen(new GameSelectionScreen());
 		}
+	}
+	
+	public static void loadResources() {
+		Bitmap def_body = (Bitmap)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/body.png"), EnumResource.IMAGE);
+		Bitmap def_hand = (Bitmap)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/hand.png"), EnumResource.IMAGE);
+		Bitmap def_face = (Bitmap)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/face.png"), EnumResource.IMAGE);
+		
+		ArrayBitmap def_avatar = new ArrayBitmap(new Bitmap[][] { { def_body, def_hand, def_face } });
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "default_avatar"), (IResource)def_avatar);
+		
+		Animation leftWalkAnim = (Animation)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/animation/walkanim-left.bin"), 
+		    EnumResource.ANIMATION);
+		Animation rightWalkAnim = (Animation)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/animation/walkanim-right.bin"), 
+		    EnumResource.ANIMATION);
+		
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "leftWalkAnim"), (IResource)leftWalkAnim);
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "rightWalkAnim"), (IResource)rightWalkAnim);
+		
+		Bitmap[][] def_tiles = IOResource.loadResourceAndCut(DikenEngine.class.getResourceAsStream("/def_tiles.png"), 32, 32);
+		ArrayBitmap tiles = new ArrayBitmap(new Bitmap[0][]);
+		tiles.bitmap = def_tiles;
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "default_tiles"), (IResource)tiles);
+		
+		ArrayBitmap menu_buttons = new ArrayBitmap(IOResource.loadResourceAndCut(Capsule.class.getResourceAsStream("/menubuttons.png"), 16, 16));
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"), (IResource)menu_buttons);
 	}
 	
 	public static Map<String, String> parseArgs(String[] args) {
