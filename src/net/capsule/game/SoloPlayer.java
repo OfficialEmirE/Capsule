@@ -15,24 +15,25 @@ import me.ramazanenescik04.diken.tools.Utils;
 import net.capsule.Capsule;
 
 public class SoloPlayer extends Player {
-	private MovementPlayer movementPlayer = new MovementPlayer(this);
+	private static final long serialVersionUID = -8240969167111897631L;
 	
-	public Bitmap body, hand, defaultFace;
-	public int color = 0xffffffff;
-	private Animation leftWalkAnim, rightWalkAnim, idleAnim;
+	public transient Bitmap body, hand, defaultFace;
+	private transient Animation leftWalkAnim, rightWalkAnim, idleAnim;
 	
 	public SoloPlayer(int x, int y) {
 		super(x, y, 57, 64);
 		this.name = Capsule.instance.account.getUsername();
 		this.setUserAvatar(Capsule.instance.account.getUsername());
 		this.aabb.setBounds(12, 0, 32, 64);
+		
+		this.setSpeed(1.0f);
 	}
 
 	@Override
 	public Bitmap render() {
 		Bitmap bitmap = new Bitmap(57, 64);
 		bitmap.draw(this.body, 12, 0);
-	    Animation currentAnim = this.getWalkAnimation();
+	    Animation currentAnim = (movementPlayer.isMoving) ? this.getWalkAnimation() : this.getIdleAnimation();
 	    if (currentAnim != null) {
 	      Bitmap handFrame = currentAnim.getCurrentFrame();
 	      bitmap.draw(handFrame, 0, 0);
@@ -46,8 +47,10 @@ public class SoloPlayer extends Player {
 		movementPlayer.tick();
 		if (movementPlayer.isMoving) {
 			playWalkAnimation();
+			this.idleAnim.setCurrentFrame(0);
 		} else {
 			resetWalkAnimation();
+			this.idleAnim.update(System.currentTimeMillis());
 		}
 		super.update(world, engine);
 	}
@@ -94,5 +97,7 @@ public class SoloPlayer extends Player {
 	    
 	    this.leftWalkAnim = (Animation)ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "leftWalkAnim"));
 	    this.rightWalkAnim = (Animation)ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "rightWalkAnim"));
+	    this.idleAnim = (Animation)ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "idleAnim"));
+	    this.idleAnim.setFPS(2);
 	}
 }

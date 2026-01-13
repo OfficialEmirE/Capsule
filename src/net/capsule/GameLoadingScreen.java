@@ -7,6 +7,7 @@ import net.capsule.game.CapsuleGame;
 
 public class GameLoadingScreen extends Screen {
 	
+	@SuppressWarnings("unused")
 	private Timer timer;
 	private CapsuleGame gameData;
 

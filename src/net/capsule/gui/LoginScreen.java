@@ -3,8 +3,6 @@ package net.capsule.gui;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import javax.swing.JOptionPane;
-
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.PasswordField;
 import me.ramazanenescik04.diken.gui.compoment.Text;
@@ -12,7 +10,6 @@ import me.ramazanenescik04.diken.gui.compoment.TextField;
 import me.ramazanenescik04.diken.gui.screen.Screen;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
-import net.capsule.Capsule;
 import net.capsule.account.Account;
 import net.capsule.util.Util;
 
@@ -26,23 +23,12 @@ public class LoginScreen extends Screen {
 	private String statusMessage;
 
 	private boolean finished;
+	private Account account;
 
 	public LoginScreen() {
 		capsuleLogoImage = ((Bitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "logo"))).resize(627 / 4, 205 / 4);
 		
 		accountFuture = new FutureTask<Account>(() -> {			
-			String username = usernameField.getText();
-			String password = passwordField.getText();
-		
-			if (username.isEmpty() || password.isEmpty()) {
-				this.statusMessage = "Username and password cannot be empty.";
-				return null;
-			}
-			
-			this.finished = true;
-
-			// Simulate login process
-			Account account = Util.login(username, password);
 			return account;
 		});
 	}
@@ -63,7 +49,21 @@ public class LoginScreen extends Screen {
 				return;
 			}
 			
-			((FutureTask<Account>) accountFuture).run();
+			String username = usernameField.getText();
+			String password = passwordField.getText();
+			if (username.isEmpty() || password.isEmpty()) {
+				this.statusMessage = "Username and password cannot be empty.";
+				passwordField.setText("");
+			} else {
+				account = Util.login(username, password);
+				if (account == null) {
+					this.statusMessage = "Your Account Password and Username Are Incorrect!";
+					passwordField.setText("");
+				} else {
+					this.statusMessage = "";
+					((FutureTask<Account>) accountFuture).run();
+				}
+			}			
 		});
 		
 		Button cancelButton = new Button("Cancel", width / 2 - 50, height / 2 + 65, 100, 20).setRunnable(() -> {

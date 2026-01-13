@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import javax.swing.JOptionPane;
-
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.SystemInfo;
 import me.ramazanenescik04.diken.game.Animation;
@@ -23,6 +21,7 @@ import me.ramazanenescik04.diken.resource.IOResource;
 import me.ramazanenescik04.diken.resource.IResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
+import net.capsule.game.node.MaterialPart;
 import net.capsule.gui.GameSelectionScreen;
 import net.capsule.gui.LoginScreen;
 import net.capsule.util.Util;
@@ -43,19 +42,25 @@ public class Capsule {
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {}
+		
+		
 		this.gameEngine.addOnCloseRunnable(() -> {
-			System.exit(0);
+			if (this.account != null) {
+				this.account.saveAccountLocalFile();
+			}
 		});
 		this.gameEngine.start();
 	}
 	
 	public void close() {
 		this.gameEngine.close();
+		
+		if (this.account != null) {
+			this.account.saveAccountLocalFile();
+		}
 	}
 	
 	public static void main(String[] args) {
-		loadResources();
-		
 		try {
 			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
 			   Util.findLinuxHomeDirectory();
@@ -105,21 +110,17 @@ public class Capsule {
 			
 			Account account_1 = Util.login(username, password);
 			if (account_1 == null) {
-				JOptionPane.showMessageDialog(null, "Unable to Log In to Your Account! Login Dialog Opens");
+				OptionWindow.showMessage("Unable to Log In to Your Account! Login Dialog Opens", "Login Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
 			}
 			instance.account = account_1;
 		}
 		
-		Capsule.instance.gameEngine.wManager.addWindow(new OptionWindow("Welcome to Capsule!", "Welcome", null));
-		
 		if (instance.account == null) {
-			
-			//TODO burası yeniden yazılacak
 			LoginScreen loginScreen = new LoginScreen();
 			Capsule.instance.gameEngine.setCurrentScreen(loginScreen);
 			
 			Future<Account> accountFuture = loginScreen.getAccount();
-			while (!accountFuture.isDone()) {
+			while (!(accountFuture.isDone() || accountFuture.isCancelled())) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
@@ -127,21 +128,25 @@ public class Capsule {
 				}
 			}
 			
+			if (accountFuture.isCancelled()) {
+				instance.gameEngine.close();
+			}
+			
 			try {
 				Account account_ = accountFuture.get();
 				if (account_ == null) {
-					JOptionPane.showMessageDialog(null, "Your Account Password and Username Are Incorrect!");
+					OptionWindow.showMessage("Your Account Password and Username Are Incorrect!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+					instance.gameEngine.close();
 					System.exit(0);
 				}
 				
 				Capsule.instance.gameEngine.setCurrentScreen(null);
 				instance.account = account_;
-			} catch (InterruptedException e) {
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			} finally {
+			}  finally {
 				if (instance.account == null) {
+					instance.gameEngine.close();
 					System.exit(0);
 				}	
 			}
@@ -172,16 +177,19 @@ public class Capsule {
 		Animation rightWalkAnim = (Animation)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/animation/walkanim-right.bin"), 
 		    EnumResource.ANIMATION);
 		
+		Animation idleAnim = (Animation)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/animation/idleanim.bin"), 
+			EnumResource.ANIMATION);
+		
 		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "leftWalkAnim"), (IResource)leftWalkAnim);
 		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "rightWalkAnim"), (IResource)rightWalkAnim);
-		
-		Bitmap[][] def_tiles = IOResource.loadResourceAndCut(DikenEngine.class.getResourceAsStream("/def_tiles.png"), 32, 32);
-		ArrayBitmap tiles = new ArrayBitmap(new Bitmap[0][]);
-		tiles.bitmap = def_tiles;
-		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "default_tiles"), (IResource)tiles);
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "idleAnim"), (IResource)idleAnim);
 		
 		ArrayBitmap menu_buttons = new ArrayBitmap(IOResource.loadResourceAndCut(Capsule.class.getResourceAsStream("/menubuttons.png"), 16, 16));
 		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"), (IResource)menu_buttons);
+		
+		ArrayBitmap materials = new ArrayBitmap(IOResource.loadResourceAndCut(Capsule.class.getResourceAsStream("/materials.png"), 16, 16));
+		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "materials"), (IResource)materials);
+		MaterialPart.setMaterialTexture(materials.bitmap);
 	}
 	
 	public static Map<String, String> parseArgs(String[] args) {
@@ -224,5 +232,7 @@ public class Capsule {
 	static {
 		Bitmap capsuleLogo = (Bitmap) IOResource.loadResource(Capsule.class.getResourceAsStream("/title.png"), EnumResource.IMAGE);
 		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "logo"), capsuleLogo);
+		
+		loadResources();
 	}
 }

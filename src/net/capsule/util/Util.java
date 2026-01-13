@@ -83,11 +83,10 @@ public class Util {
       try {
 		return getWebData(new URI(string));
 	  } catch (URISyntaxException e) {
-		e.printStackTrace();
 		return """
 				{
 					"status": "error",
-					"message": "Invalid URL"
+					"message": """ + e.getMessage() + """
 				}
 				""";
 	  }

@@ -3,16 +3,17 @@ package net.capsule.gui;
 import java.net.URI;
 import java.util.*;
 
-import javax.swing.JOptionPane;
-
 import org.json.JSONObject;
+import org.lwjgl.input.Keyboard;
 
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.LinkButton;
 import me.ramazanenescik04.diken.gui.compoment.Panel;
 import me.ramazanenescik04.diken.gui.compoment.RenderImage;
+import me.ramazanenescik04.diken.gui.compoment.TextField;
 import me.ramazanenescik04.diken.gui.screen.Screen;
 import me.ramazanenescik04.diken.gui.screen.StaticBackground;
+import me.ramazanenescik04.diken.gui.window.OptionWindow;
 import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
@@ -27,8 +28,11 @@ public class GameSelectionScreen extends Screen {
 	private Bitmap capsuleLogoImage, gamesPanelBg;
 	private int page = 0, totalPages = 0;
 	
+	private TextField searchField;
+	
 	public GameSelectionScreen() {
 		games = new ArrayList<>();
+		searchField = new TextField(0, 0, 170, 20);
 		
 		capsuleLogoImage = ((Bitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "logo"))).resize(627 / 4, 205 / 4);
 		gamesPanelBg = ((ArrayBitmap) ResourceLocator.getResource("bgd-tiles")).getBitmap(0, 0);
@@ -45,22 +49,27 @@ public class GameSelectionScreen extends Screen {
 		titlePanel.add(capsuleLogo);
 		
 		String username = Capsule.instance.account.getUsername();
-		LinkButton linkableText = new LinkButton(username, 0, 10, username.length() * 7, 16).setURI(URI.create("http://capsule.net.tr/profile/?username=" + username));
+		LinkButton linkableText = new LinkButton(username, 0, 10, username.length() * 8, 20).setURI(URI.create("http://capsule.net.tr/profile/?username=" + username));
 		linkableText.setLocation(width - linkableText.width - 110, 10);
 		titlePanel.add(linkableText);
 		
-		Button logoffButton = new Button("Logoff", titlePanel.width - 100, 10, 80, 16).setRunnable(() -> {
-			int quitting = JOptionPane.showConfirmDialog(null, "Are you sure you want to logoff?", "Logoff Confirmation", 
-					JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			
-			if (quitting == JOptionPane.YES_OPTION) {
-				Capsule.instance.account.logoff();
-				Capsule.instance.account = null;
-				Capsule.instance.close();				
-			}
+		Button logoffButton = new Button("Logoff", titlePanel.width - 100, 10, 80, 20).setRunnable(() -> {
+			OptionWindow.showMessageNoWait("Are you sure you want to logoff?", "Logoff Confirmation", OptionWindow.PLAIN_MESSAGE, OptionWindow.YES_NO_OPTION, (i) -> {
+				if (i == OptionWindow.YES_BUTTON) {
+					Capsule.instance.account.logoff();
+					Capsule.instance.account = null;
+					Capsule.instance.close();				
+				}
+			});
 		});
 		
 		titlePanel.add(logoffButton);
+		
+		searchField.setLocation((titlePanel.getWidth() / 2 - (searchField.width + 30) / 2), 10);
+		titlePanel.add(searchField);
+		
+		Button searchButton = new Button("Search", (titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10, 42, 20).setRunnable(() -> {page = 0; refreshGamesGrid();});
+		titlePanel.add(searchButton);
 		
 		this.getContentPane().add(titlePanel);
 	
@@ -69,19 +78,18 @@ public class GameSelectionScreen extends Screen {
 		this.getContentPane().add(gamesPanel);
 		
 		loadGameList();
-		
 		refreshGamesGrid();
 
 		// --- Butonlar ---
 
-		Button pageBack = new Button("Page Back", 10, engine.getHeight() - 40, 100, 30).setRunnable(() -> {
+		Button pageBack = new Button("Page Back", 10, engine.getHeight() - 40, 100, 34).setRunnable(() -> {
 		    if (page > 0) {
 		        page--;
 		        refreshGamesGrid();
 		    }
 		});
 
-		Button pageForward = new Button("Page Forward", engine.getWidth() - 110, engine.getHeight() - 40, 100, 30).setRunnable(() -> {
+		Button pageForward = new Button("Page Forward", engine.getWidth() - 110, engine.getHeight() - 40, 100, 34).setRunnable(() -> {
 		    // Eğer bir sonraki sayfa mevcutsa (index sınırını aşmıyorsak)
 		    if (page < totalPages - 1) {
 		        page++;
@@ -98,29 +106,58 @@ public class GameSelectionScreen extends Screen {
 	    Panel gamesPanel = (Panel) this.getContentPane().get(1);
 	    gamesPanel.clear(); // Paneli temizle
 
-	    if (games.isEmpty()) return;
+	    // --- 1. ARAMA VE FİLTRELEME ---
+	    // Ekranda gösterilecek oyunları tutacak geçici bir liste
+	    List<CapsuleGame> visibleGames;
+	    
+	    String searchText = searchField.getText();
 
-	    // --- 1. Dinamik Hesaplamalar (Her çağrıldığında güncel panel boyutunu kullanır) ---
-	    int gameW = games.get(0).width;
-	    int gameH = games.get(0).height;
+	    if (searchText.trim().isEmpty()) {
+	        // Arama yoksa hepsini göster
+	        visibleGames = games;
+	    } else {
+	        // Arama varsa filtrele
+	        visibleGames = new ArrayList<>();
+	        String searchLower = searchText.toLowerCase(); // Büyük/küçük harf duyarsız olması için
+
+	        for (CapsuleGame game : games) {
+	            // game.getName() veya game.name (senin değişken adın neyse onu yaz)
+	            // contains ile içinde geçiyor mu diye bakıyoruz
+	            if (game.getGameName().toLowerCase().contains(searchLower)) {
+	                visibleGames.add(game);
+	            }
+	        }
+	    }
+
+	    // Eğer gösterilecek oyun yoksa (arama sonucu boşsa) çık
+	    if (visibleGames.isEmpty()) {
+	        this.totalPages = 0;
+	        this.page = 0;
+	        return; 
+	    }
+
+	    // --- 2. DİNAMİK HESAPLAMALAR (Artık visibleGames listesini kullanıyoruz) ---
+	    // Referans boyutları visibleGames'in ilk elemanından alıyoruz
+	    int gameW = visibleGames.get(0).width;
+	    int gameH = visibleGames.get(0).height;
 	    int gap = 20;
 
 	    int gamesPerRow = Math.max(1, gamesPanel.width / (gameW + gap));
 	    int rowsPerPage = Math.max(1, gamesPanel.height / (gameH + gap));
 	    int maxItemsPerPage = gamesPerRow * rowsPerPage;
 
-	    // Toplam sayfa sayısını güncelle
-	    this.totalPages = (int) Math.ceil((double) games.size() / maxItemsPerPage);
+	    // Toplam sayfa sayısını GÖRÜNÜR oyunlara göre güncelle
+	    this.totalPages = (int) Math.ceil((double) visibleGames.size() / maxItemsPerPage);
 	    
-	    // Sayfa sınırını kontrol et (Resize sonrası sayfa sayısı azalmış olabilir)
+	    // Sayfa sınırını kontrol et (Filtreleme sonrası sayfa sayısı çok azalabilir)
 	    if (page >= totalPages) page = Math.max(0, totalPages - 1);
 
-	    // --- 2. Sayfayı Çiz ---
+	    // --- 3. SAYFAYI ÇİZ ---
 	    int startIndex = page * maxItemsPerPage;
-	    int endIndex = Math.min(startIndex + maxItemsPerPage, games.size());
+	    int endIndex = Math.min(startIndex + maxItemsPerPage, visibleGames.size());
 
 	    for (int i = startIndex; i < endIndex; i++) {
-	        CapsuleGame game = games.get(i);
+	        CapsuleGame game = visibleGames.get(i);
 	        int visualIndex = i - startIndex; 
 
 	        int x = 10 + (visualIndex % gamesPerRow) * (gameW + gap);
@@ -150,6 +187,7 @@ public class GameSelectionScreen extends Screen {
 				
 				CapsuleGame game = new CapsuleGame(Util.getImageWeb(URI.create(iconUrl)), gameId, gameName, authorUsername);
 				games.add(game);
+				
 				refreshGamesGrid();
 			}			
 		}, "Game Load Thread").start();
@@ -178,6 +216,11 @@ public class GameSelectionScreen extends Screen {
 		
 		Button pageForward = (Button) this.getContentPane().get(3);
 		pageForward.setLocation(engine.getWidth() - 110, engine.getHeight() - 40);
+		
+		searchField.setLocation((titlePanel.getWidth() / 2 - (searchField.width + 30) / 2), 10);
+		
+		Button searchButton = (Button) titlePanel.get(4);
+		searchButton.setLocation((titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10);
 	}
 
 	@Override
@@ -187,5 +230,15 @@ public class GameSelectionScreen extends Screen {
 		bitmap.drawLine(0, 60, engine.getWidth(), 60, 0xffffffff, 1);
 		
 		bitmap.drawText("Pages " + (page + 1) + " / " + totalPages, engine.getWidth() / 2, engine.getHeight() - 20, true);
+	}
+
+	@Override
+	public void keyDown(char eventCharacter, int eventKey) {
+		if (this.searchField.isFocused() && eventKey == Keyboard.KEY_RETURN) {
+			page = 0;
+			refreshGamesGrid();
+		}
+		
+		super.keyDown(eventCharacter, eventKey);
 	}
 }
