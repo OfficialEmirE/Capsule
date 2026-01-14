@@ -26,5 +26,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="/DikenEngine/libs/ReportBugs.jar"/>
 	<classpathentry kind="lib" path="DikenEngine.jar" sourcepath="/DikenEngine/src"/>
+	<classpathentry kind="lib" path="libs/swingx-1.6.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

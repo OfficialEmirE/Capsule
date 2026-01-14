@@ -5,7 +5,6 @@ import org.json.JSONObject;
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.game.Animation;
 import me.ramazanenescik04.diken.game.World;
-import me.ramazanenescik04.diken.game.entity.MovementPlayer;
 import me.ramazanenescik04.diken.game.entity.Player;
 import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
@@ -25,8 +24,6 @@ public class SoloPlayer extends Player {
 		this.name = Capsule.instance.account.getUsername();
 		this.setUserAvatar(Capsule.instance.account.getUsername());
 		this.aabb.setBounds(12, 0, 32, 64);
-		
-		this.setSpeed(1.0f);
 	}
 
 	@Override
@@ -44,7 +41,12 @@ public class SoloPlayer extends Player {
 
 	@Override
 	public void update(World world, DikenEngine engine) {
-		movementPlayer.tick();
+		/*if (false) {
+			
+		} else {
+			resetWalkAnimation();
+			this.idleAnim.setCurrentFrame(0);
+		}*/
 		if (movementPlayer.isMoving) {
 			playWalkAnimation();
 			this.idleAnim.setCurrentFrame(0);

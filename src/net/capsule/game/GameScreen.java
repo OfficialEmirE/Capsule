@@ -8,6 +8,7 @@ import org.lwjgl.input.Keyboard;
 import me.ramazanenescik04.diken.game.World;
 import me.ramazanenescik04.diken.game.nodes.Sky;
 import me.ramazanenescik04.diken.game.nodes.SpawnLocation;
+import me.ramazanenescik04.diken.game.nodes.Tool;
 import me.ramazanenescik04.diken.gui.compoment.*;
 import me.ramazanenescik04.diken.gui.screen.Screen;
 import me.ramazanenescik04.diken.gui.window.SettingsWindow;
@@ -32,6 +33,8 @@ public class GameScreen extends Screen {
 	
 	public void openScreen() {
 		System.gc();
+		
+		ArrayBitmap menuButtonTextures = (ArrayBitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"));
 		
 		chatMessageList = new ArrayList<>();
 		theWorld = new World("TestGame", engine.getWidth(), engine.getHeight());
@@ -59,6 +62,10 @@ public class GameScreen extends Screen {
 		theWorld.addNode(new SpawnLocation(-100, 100, 16, 16));
 		theWorld.addNode(new SpawnLocation(100, -100, 16, 16));
 		
+		Tool tool = new Tool();
+		tool.setIcon(menuButtonTextures.getBitmap(1, 0));
+		theWorld.addNode(tool);
+		
 		theWorld.addNode(thePlayer);
 		thePlayer.setFollowCamera(true);
 		thePlayer.setDebugRenderer(true);
@@ -77,7 +84,6 @@ public class GameScreen extends Screen {
 		
 		initPausePanel();
 		
-		ArrayBitmap menuButtonTextures = (ArrayBitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"));
 		ImageButton pauseButton = new ImageButton(menuButtonTextures.getBitmap(0, 0), 2, 2, 20, 20);
 		pauseButton.setRunnable(() -> {
 			if (this.chatBarEnabled)
@@ -137,8 +143,6 @@ public class GameScreen extends Screen {
 			
 			bitmap.draw(this.pausePanel.render(), 0, 0);
 		}
-		
-		bitmap.drawText("isAlive: " + this.thePlayer.isAlive(), 0, 24, false);
 		
 		for (int i = 0; i < this.chatMessageList.size(); i++) {
 			String text = this.chatMessageList.get(i);
@@ -210,11 +214,19 @@ public class GameScreen extends Screen {
 		}
 		
 		if (eventKey == Keyboard.KEY_R) {
-			this.thePlayer.setHealth(-1);
+			this.thePlayer.damage(100);
 		}
 	}
 	
 	public void tick() {
+		boolean busy = engine.wManager.activeWindow != null || pauseMenuEnabled || chatBarEnabled || !this.thePlayer.isAlive();
+		
+		if (thePlayer.canMove && busy) {
+			thePlayer.canMove = false;
+		} else if (!thePlayer.canMove && !busy) {
+			thePlayer.canMove = true;
+		}
+		
 		super.tick();
 		
 		if (thePlayer.followCamera) {
@@ -223,14 +235,6 @@ public class GameScreen extends Screen {
 		
 		healthBar.value = thePlayer.health;
 		healthBar.maxValue = thePlayer.maxHealth;
-		
-		boolean busy = engine.wManager.activeWindow != null || pauseMenuEnabled || chatBarEnabled || !this.thePlayer.isAlive();
-		
-		if (thePlayer.canMove && busy) {
-			thePlayer.canMove = false;
-		} else if (!thePlayer.canMove && !busy) {
-			thePlayer.canMove = true;
-		}
 	}
 
 	public void sendMessage(String message) {
