@@ -56,7 +56,7 @@ public class Account {
 	        prefs.put("api_key", apiKey.toString());
 	        prefs.put("username", username);
 	        prefs.flush(); // diske yazar
-	        System.out.println("Saved Account Data");
+	        System.out.println("[Capsule] Saved Account Data");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

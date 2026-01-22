@@ -1,13 +1,12 @@
 package net.capsule.gui;
 
 import java.net.URI;
-import java.util.*;
-
-import org.json.JSONObject;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opencl.api.Filter;
 
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.LinkButton;
+import me.ramazanenescik04.diken.gui.compoment.LinkText;
 import me.ramazanenescik04.diken.gui.compoment.Panel;
 import me.ramazanenescik04.diken.gui.compoment.RenderImage;
 import me.ramazanenescik04.diken.gui.compoment.TextField;
@@ -18,24 +17,34 @@ import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.Capsule;
+import net.capsule.GameLoadingScreen;
 import net.capsule.game.CapsuleGame;
-import net.capsule.util.Util;
 
 public class GameSelectionScreen extends Screen {
 	
-	private List<CapsuleGame> games;
-	
 	private Bitmap capsuleLogoImage, gamesPanelBg;
-	private int page = 0, totalPages = 0;
 	
 	private TextField searchField;
+	private GameListPanel games;
+	private Panel warningPanel;
+
+	private Filter<CapsuleGame> filter;
 	
 	public GameSelectionScreen() {
-		games = new ArrayList<>();
 		searchField = new TextField(0, 0, 170, 20);
 		
 		capsuleLogoImage = ((Bitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "logo"))).resize(627 / 4, 205 / 4);
 		gamesPanelBg = ((ArrayBitmap) ResourceLocator.getResource("bgd-tiles")).getBitmap(0, 0);
+		
+		filter = (o) -> {
+			var text = this.searchField.getText().toLowerCase();
+			
+			if (text.isEmpty()) {
+				return true;
+			} else {
+				return o.getGameName().toLowerCase().contains(text);
+			}
+		};
 	}
 	
 	public void openScreen() {
@@ -68,139 +77,48 @@ public class GameSelectionScreen extends Screen {
 		searchField.setLocation((titlePanel.getWidth() / 2 - (searchField.width + 30) / 2), 10);
 		titlePanel.add(searchField);
 		
-		Button searchButton = new Button("Search", (titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10, 42, 20).setRunnable(() -> {page = 0; refreshGamesGrid();});
+		Button searchButton = new Button("Search", (titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10, 42, 20).setRunnable(() -> {
+			games.page = 0; 
+			games.searchWithFilter(filter);
+		});
 		titlePanel.add(searchButton);
 		
 		this.getContentPane().add(titlePanel);
 	
-		Panel gamesPanel = new Panel(0, 60, width, engine.getHeight() - 60);
-		gamesPanel.setBackground(new RandomPositionBg(gamesPanelBg));
-		this.getContentPane().add(gamesPanel);
-		
-		loadGameList();
-		refreshGamesGrid();
-
-		// --- Butonlar ---
-
-		Button pageBack = new Button("Page Back", 10, engine.getHeight() - 40, 100, 34).setRunnable(() -> {
-		    if (page > 0) {
-		        page--;
-		        refreshGamesGrid();
-		    }
-		});
-
-		Button pageForward = new Button("Page Forward", engine.getWidth() - 110, engine.getHeight() - 40, 100, 34).setRunnable(() -> {
-		    // Eğer bir sonraki sayfa mevcutsa (index sınırını aşmıyorsak)
-		    if (page < totalPages - 1) {
-		        page++;
-		        refreshGamesGrid();
-		    }
+		games = new GameListPanel(0, 60, width, engine.getHeight() - 60);
+		games.setBackground(new RandomPositionBg(gamesPanelBg));
+		games.setFilter(filter);
+		games.setPlayPressedConsumer((game) -> {
+			this.engine.setCurrentScreen(new GameLoadingScreen(game));
 		});
 		
-		this.getContentPane().add(pageBack);
-		this.getContentPane().add(pageForward);
-	}
-	
-	// Bu metodu hem butonlarda hem de resize kısmında çağıracağız
-	private void refreshGamesGrid() {
-	    Panel gamesPanel = (Panel) this.getContentPane().get(1);
-	    gamesPanel.clear(); // Paneli temizle
-
-	    // --- 1. ARAMA VE FİLTRELEME ---
-	    // Ekranda gösterilecek oyunları tutacak geçici bir liste
-	    List<CapsuleGame> visibleGames;
-	    
-	    String searchText = searchField.getText();
-
-	    if (searchText.trim().isEmpty()) {
-	        // Arama yoksa hepsini göster
-	        visibleGames = games;
-	    } else {
-	        // Arama varsa filtrele
-	        visibleGames = new ArrayList<>();
-	        String searchLower = searchText.toLowerCase(); // Büyük/küçük harf duyarsız olması için
-
-	        for (CapsuleGame game : games) {
-	            // game.getName() veya game.name (senin değişken adın neyse onu yaz)
-	            // contains ile içinde geçiyor mu diye bakıyoruz
-	            if (game.getGameName().toLowerCase().contains(searchLower)) {
-	                visibleGames.add(game);
-	            }
-	        }
-	    }
-
-	    // Eğer gösterilecek oyun yoksa (arama sonucu boşsa) çık
-	    if (visibleGames.isEmpty()) {
-	        this.totalPages = 0;
-	        this.page = 0;
-	        return; 
-	    }
-
-	    // --- 2. DİNAMİK HESAPLAMALAR (Artık visibleGames listesini kullanıyoruz) ---
-	    // Referans boyutları visibleGames'in ilk elemanından alıyoruz
-	    int gameW = visibleGames.get(0).width;
-	    int gameH = visibleGames.get(0).height;
-	    int gap = 20;
-
-	    int gamesPerRow = Math.max(1, gamesPanel.width / (gameW + gap));
-	    int rowsPerPage = Math.max(1, gamesPanel.height / (gameH + gap));
-	    int maxItemsPerPage = gamesPerRow * rowsPerPage;
-
-	    // Toplam sayfa sayısını GÖRÜNÜR oyunlara göre güncelle
-	    this.totalPages = (int) Math.ceil((double) visibleGames.size() / maxItemsPerPage);
-	    
-	    // Sayfa sınırını kontrol et (Filtreleme sonrası sayfa sayısı çok azalabilir)
-	    if (page >= totalPages) page = Math.max(0, totalPages - 1);
-
-	    // --- 3. SAYFAYI ÇİZ ---
-	    int startIndex = page * maxItemsPerPage;
-	    int endIndex = Math.min(startIndex + maxItemsPerPage, visibleGames.size());
-
-	    for (int i = startIndex; i < endIndex; i++) {
-	        CapsuleGame game = visibleGames.get(i);
-	        int visualIndex = i - startIndex; 
-
-	        int x = 10 + (visualIndex % gamesPerRow) * (gameW + gap);
-	        int y = 10 + (visualIndex / gamesPerRow) * (gameH + gap);
-	        
-	        game.setLocation(x, y);
-	        gamesPanel.add(game);
-	    }
-	}
-	
-	private synchronized void loadGameList() {
-		new Thread(() -> {
-			JSONObject gamesData = new JSONObject(Util.getWebData("http://capsule.net.tr/api/v1/games/"));
+		this.getContentPane().add(games);
+		
+		warningPanel = new Panel(0, 0, 265, 16) {
+			private Bitmap warningIcon = ((ArrayBitmap)ResourceLocator.getResource("win-icons")).getBitmap(4, 0);
 			
-			if (!gamesData.getString("status").equals("success")) {
-				System.err.println("Failed to fetch games data: " + gamesData.getString("message"));
-				return;
+			@Override
+			public Bitmap render() {
+				Bitmap btp = new Bitmap(width, height);
+				btp.clear(0xffbdbd00);
+				btp.draw(warningIcon, 0, 0);
+				btp.drawLine(17, 0, 17, 15, -1, 2);
+				
+				btp.drawText("Capsule - Alpha! Bazı Özellikler Çalışmayabilir!", 19, 2, false);
+				return btp;
 			}
-			
-			for (Object gameObj : gamesData.getJSONArray("data")) {
-				JSONObject gameJson = (JSONObject) gameObj;
-				
-				int gameId = gameJson.getInt("id");
-				String gameName = gameJson.getString("title");
-				String iconUrl = gameJson.getString("image_url");
-				String authorUsername = gameJson.optString("username", "Anonymouns");
-				
-				CapsuleGame game = new CapsuleGame(Util.getImageWeb(URI.create(iconUrl)), gameId, gameName, authorUsername);
-				games.add(game);
-				
-				refreshGamesGrid();
-			}			
-		}, "Game Load Thread").start();
+		};
+		warningPanel.setLocation(width / 2 - warningPanel.getWidth() / 2, 40);	
+		this.getContentPane().add(warningPanel);
+		
+		LinkText text = new LinkText("Email: ramazanenescik04@capsule.net.tr", 0, 0).setURI(URI.create("mailto://ramazanenescik04@capsule.net.tr"));
+		this.getContentPane().add(text);
+		text.tick(engine);
+		text.setLocation((engine.getWidth() - text.getWidth()) / 2, engine.getHeight() - 10);
 	}
 	
 	public void resized() {
-		try {
-			Panel gamesPanel = (Panel) this.getContentPane().get(1);
-			gamesPanel.setSize(engine.getWidth(), engine.getHeight() - 60);
-
-			refreshGamesGrid();
-		} catch (Throwable e) {
-		}
+		games.setSize(engine.getWidth(), engine.getHeight() - 60);
 		
 		Panel titlePanel = (Panel) this.getContentPane().get(0);
 		titlePanel.setSize(engine.getWidth(), 60);
@@ -211,16 +129,15 @@ public class GameSelectionScreen extends Screen {
 		Button logoffButton = (Button) titlePanel.get(2);
 		logoffButton.setLocation(titlePanel.width - 100, 10);
 		
-		Button pageBack = (Button) this.getContentPane().get(2);
-		pageBack.setLocation(10, engine.getHeight() - 40);
-		
-		Button pageForward = (Button) this.getContentPane().get(3);
-		pageForward.setLocation(engine.getWidth() - 110, engine.getHeight() - 40);
-		
 		searchField.setLocation((titlePanel.getWidth() / 2 - (searchField.width + 30) / 2), 10);
 		
 		Button searchButton = (Button) titlePanel.get(4);
 		searchButton.setLocation((titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10);
+		
+		warningPanel.setLocation(engine.getWidth() / 2 - warningPanel.getWidth() / 2, 40);	
+		
+		LinkText text = (LinkText) this.getContentPane().get(3);
+		text.setLocation((engine.getWidth() - text.getWidth()) / 2, engine.getHeight() - 10);
 	}
 
 	@Override
@@ -228,15 +145,14 @@ public class GameSelectionScreen extends Screen {
 		super.render(bitmap);
 		
 		bitmap.drawLine(0, 60, engine.getWidth(), 60, 0xffffffff, 1);
-		
-		bitmap.drawText("Pages " + (page + 1) + " / " + totalPages, engine.getWidth() / 2, engine.getHeight() - 20, true);
+		bitmap.drawText("Pages " + (games.page + 1) + " / " + games.totalPages, engine.getWidth() / 2, engine.getHeight() - 20, true);
 	}
 
 	@Override
 	public void keyDown(char eventCharacter, int eventKey) {
 		if (this.searchField.isFocused() && eventKey == Keyboard.KEY_RETURN) {
-			page = 0;
-			refreshGamesGrid();
+			games.page = 0; 
+			games.searchWithFilter(filter);
 		}
 		
 		super.keyDown(eventCharacter, eventKey);

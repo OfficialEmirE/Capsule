@@ -2,13 +2,15 @@ package net.capsule.game;
 
 import java.awt.image.BufferedImage;
 import java.net.URI;
+import java.net.URL;
+import java.util.function.Consumer;
 
-import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.LinkButton;
 import me.ramazanenescik04.diken.gui.compoment.LinkText;
 import me.ramazanenescik04.diken.gui.compoment.Panel;
 import me.ramazanenescik04.diken.resource.Bitmap;
+import net.capsule.util.Util;
 
 public class CapsuleGame extends Panel {
 	
@@ -20,6 +22,8 @@ public class CapsuleGame extends Panel {
 	private String authorUsername;
 	
 	private Bitmap icon;
+	
+	private Consumer<CapsuleGame> consumer;
 	
 	public CapsuleGame(Bitmap logo, int gameId, String gameName, String authorUsername) {
 		super(0, 0, 256, 256);
@@ -35,7 +39,9 @@ public class CapsuleGame extends Panel {
 		}
 		
 		Button playButton = new Button("Play", 10, 256 - 42, 96, 32).setRunnable(() -> {
-			DikenEngine.getEngine().setCurrentScreen(new GameScreen());
+			if (consumer != null) {
+				consumer.accept(this);
+			}
 		});
 		
 		playButton.bColor = 0xff00ff00;
@@ -54,6 +60,26 @@ public class CapsuleGame extends Panel {
 	
 	public CapsuleGame(BufferedImage logo, int gameId, String gameName, String authorUsername) {
 		this(Bitmap.toBitmap(logo), gameId, gameName, authorUsername);
+	}
+	
+	public CapsuleGame(URI logoURI, int gameId, String gameName, String authorUsername) {
+		this(new Bitmap(64, 64), gameId, gameName, authorUsername);
+		
+		Thread.startVirtualThread(() -> {
+			icon = Bitmap.toBitmap(Util.getImageWeb(logoURI));
+		});
+	}
+	
+	public CapsuleGame(URL logoURL, int gameId, String gameName, String authorUsername) {
+		this(new Bitmap(64, 64), gameId, gameName, authorUsername);
+		
+		Thread.startVirtualThread(() -> {
+			icon = Bitmap.toBitmap(Util.getImageWeb(logoURL));
+		});
+	}
+	
+	public void setConsumer(Consumer<CapsuleGame> a) {
+		this.consumer = a;
 	}
 	
 	public int getGameId() {

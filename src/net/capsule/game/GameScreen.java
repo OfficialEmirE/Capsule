@@ -1,89 +1,157 @@
 package net.capsule.game;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.lwjgl.input.Keyboard;
 
+import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.game.World;
-import me.ramazanenescik04.diken.game.nodes.Sky;
-import me.ramazanenescik04.diken.game.nodes.SpawnLocation;
 import me.ramazanenescik04.diken.game.nodes.Tool;
 import me.ramazanenescik04.diken.gui.compoment.*;
 import me.ramazanenescik04.diken.gui.screen.Screen;
+import me.ramazanenescik04.diken.gui.window.OptionWindow;
 import me.ramazanenescik04.diken.gui.window.SettingsWindow;
 import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.Capsule;
-import net.capsule.game.node.MaterialPart;
-import net.capsule.gui.GameSelectionScreen;
 
 public class GameScreen extends Screen {
 	
-	private Panel pausePanel;
+	private Panel pausePanel, invertoryShortcutPanel;
 	private TextField chatBar;
 	private ProgressBar healthBar;
 	private boolean chatBarEnabled, pauseMenuEnabled;
 	
 	public World theWorld;
-	private SoloPlayer thePlayer = new SoloPlayer(100, 100);
+	private SoloPlayer thePlayer = new SoloPlayer(0, 0);
+	
+	private Screen parent;
 	
 	private List<String> chatMessageList;
+	private boolean initIsFinished = false;
+	
+	public GameScreen(Screen parent) {
+		this.parent = parent;
+	}
+	
+	public GameScreen(Screen parent, World world) {
+		this.theWorld = world != null ? world.copy() : null;
+		this.parent = parent;
+	}
 	
 	public void openScreen() {
 		System.gc();
 		
-		ArrayBitmap menuButtonTextures = (ArrayBitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"));
-		
 		chatMessageList = new ArrayList<>();
-		theWorld = new World("TestGame", engine.getWidth(), engine.getHeight());
-		/*try {
-			theWorld = World.loadWorld(new File("./world.dew"));
-			theWorld.gameName = "TestGame";
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		theWorld.setBounds(0, 0, engine.getWidth(), engine.getHeight());
-		theWorld.addNode(new Sky(0xffcefbf9 + 0xff7d7d7d));
-		MaterialPart part = new MaterialPart(100, 100, 200, 200, MaterialPart.Material.Smooth_Stud);
-		part.setSolid(false);
-		part.addChild(new MaterialPart(150, 150, 16, 16, MaterialPart.Material.Sapling));
-		part.addChild(new MaterialPart(100, 100, 16, 16, MaterialPart.Material.Flower));
-		part.addChild(new MaterialPart(170, 150, 16, 16, MaterialPart.Material.Rose));
-		part.addChild(new MaterialPart(150, 100, 16, 16, MaterialPart.Material.Web));
-		theWorld.addNode(part);
-		theWorld.addNode(new SpawnLocation(100, 100, 16, 16));
-		theWorld.addNode(new SpawnLocation(-100, -100, 16, 16));
-		theWorld.addNode(new SpawnLocation(-100, 100, 16, 16));
-		theWorld.addNode(new SpawnLocation(100, -100, 16, 16));
-		
-		Tool tool = new Tool();
-		tool.setIcon(menuButtonTextures.getBitmap(1, 0));
-		theWorld.addNode(tool);
-		
-		theWorld.addNode(thePlayer);
-		thePlayer.setFollowCamera(true);
-		thePlayer.setDebugRenderer(true);
-		
-		theWorld.root.printTree(true);
-		
 		chatBar = new TextField(2, engine.getHeight() - 22, engine.getWidth() - 2, 20);
 		pausePanel = new Panel(0, 0, engine.getWidth(), engine.getHeight());
+		invertoryShortcutPanel = new Panel(engine.getWidth() / 2 - 2 / 2, (engine.getHeight() - 26) - 36, 2, 34) {
+		    // Tool ve Buton eşleşmesini tutmak için (gerekirse sonradan erişmek için)
+		    private Map<Tool, ImageButton> buttons = new HashMap<>();
+		    private ImageButton selectedButton;
+
+		    @Override
+		    public void tick(DikenEngine engine) {
+		        super.tick(engine);
+		        
+		        // Oyuncunun tool listesini al
+		        List<Tool> currentTools = thePlayer.findFirstChild("Tools").findByClass(Tool.class);
+		        int currentSize = currentTools.size();
+		        
+		        // Panel genişliğini dinamik ayarla
+		        int slotWidth = currentSize * 34;
+		        // Not: setBounds işlemini sadece boyut değiştiyse yapmak performansı artırır
+		        if (this.getWidth() != slotWidth + 2) {
+		             this.setBounds(engine.getWidth() / 2 - (slotWidth + 2) / 2, (engine.getHeight() - 26) - 36, slotWidth + 2, 34);
+		        }
+
+		        // Eğer araç sayısı değiştiyse listeyi güncelle
+		        if (currentSize != buttons.size()) {
+		            this.updateInventoryList(currentTools);
+		        }
+		    }
+
+		    // Listeyi yenileyen metod
+		    private void updateInventoryList(List<Tool> tools) {
+		        // 1. Önceki butonları temizle (Panelin kendi component listesinden ve map'ten)
+		        this.clear(); // Panelin çocuklarını silen bir metodun olduğunu varsayıyorum
+		        buttons.clear();
+		        thePlayer.setSelectedTool(null);
+
+		        int xOffset = 2; // Soldan boşluk
+		        int yOffset = 1; // Üstten boşluk (ortalama için)
+		        int btnSize = 32;
+		        int gap = 2; // Butonlar arası boşluk
+
+		        // 2. Yeni listeyi döngüye al
+		        for (int i = 0; i < tools.size(); i++) {
+		            Tool tool = tools.get(i);
+
+		            // Butonun X konumu: Başlangıç + (Sıra * (Boyut + Boşluk))
+		            int xPos = xOffset + (i * (btnSize + gap));
+		            
+		            // ImageButton oluştur (Tool'un ikonunu kullanarak)
+		            // Varsayım: tool.getIcon() veya tool.getImage() bir görsel dönüyor.
+		            ImageButton btn = new ImageButton(tool.getIcon(), xPos, yOffset, btnSize, btnSize) {
+						@Override
+						public Bitmap render() {
+							Bitmap bitmap = super.render();
+							if (selectedButton == this) {
+								bitmap.box(0, 0, width - 1, height - 1, 0xffffff00);
+							}
+							return bitmap;
+						}
+		            };
+
+		            // Tıklama olayı (Lambda expression örneği)
+		            btn.setRunnable(() -> {
+		            	if (thePlayer.getSelectedTool() == tool) {
+		            		thePlayer.setSelectedTool(null);
+		            	} else {		            		
+		            		tool.y = 30;
+		            		tool.x = -16;
+		            		thePlayer.setSelectedTool(tool);
+		            	}
+		            	
+		            	if (selectedButton == btn) {
+		            		selectedButton = null;
+		            	} else {
+		            		selectedButton = btn;
+		            	}
+		            });
+
+		            // Panele ve Map'e ekle
+		            this.add(btn); 
+		            buttons.put(tool, btn);
+		        }
+		    }
+		};
 		healthBar = new ProgressBar(engine.getWidth() / 2 - 110 / 2, engine.getHeight() - 26, 110, 16);
 		healthBar.text = "Health";
 		healthBar.color = 0xff4fff4f;
 		healthBar.color2 = 0xff33a633;
 		
+		if (this.theWorld == null ) {
+			OptionWindow.showMessageNoWait("World object null! Please report the error!", "Error", OptionWindow.ERROR_MESSAGE, 0, null);
+			this.engine.setCurrentScreen(this.parent);
+			return;
+		}
+		
+		theWorld.setBounds(0, 0, engine.getWidth(), engine.getHeight());
+		theWorld.addNode(thePlayer);
+		thePlayer.setFollowCamera(true);
+		
 		this.getContentPane().add(theWorld);
 		this.getContentPane().add(healthBar);
+		this.getContentPane().add(invertoryShortcutPanel);
 		
 		initPausePanel();
 		
+		ArrayBitmap menuButtonTextures = (ArrayBitmap) ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "menu_buttons"));
 		ImageButton pauseButton = new ImageButton(menuButtonTextures.getBitmap(0, 0), 2, 2, 20, 20);
 		pauseButton.setRunnable(() -> {
 			if (this.chatBarEnabled)
@@ -102,6 +170,8 @@ public class GameScreen extends Screen {
 			}
 		});
 		this.getContentPane().add(chatButton);
+		
+		initIsFinished = true;
 	}
 	
 	private void initPausePanel() {
@@ -115,7 +185,7 @@ public class GameScreen extends Screen {
 			};
 		}).setButtonColor(0xff005cff);
 		Button exitButton = new Button("Exit The Game", pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2) + 25, 120, 22).setRunnable(() -> {
-			this.engine.setCurrentScreen(new GameSelectionScreen());
+			this.engine.setCurrentScreen(parent);
 			System.gc();
 		}).setButtonColor(0xff005cff);
 		pausePanel.add(resumeButton);
@@ -124,10 +194,15 @@ public class GameScreen extends Screen {
 	}
 	
 	public void resized() {
+		if (this.theWorld == null)
+			return;
+		
 		chatBar.setBounds(2, engine.getHeight() - 22, engine.getWidth() - 2, 20);
 		pausePanel.setSize(engine.getWidth(), engine.getHeight());
 		theWorld.setSize(engine.getWidth(), engine.getHeight());
 		healthBar.setBounds(engine.getWidth() / 2 - 110 / 2, engine.getHeight() - 26, 110, 16);
+		
+		invertoryShortcutPanel.setLocation(engine.getWidth() / 2 - invertoryShortcutPanel.getWidth() / 2, (engine.getHeight() - 26) - 36);
 		
 		pausePanel.get(0).setLocation(pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2) - 25);
 		pausePanel.get(1).setLocation(pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2));
@@ -137,6 +212,19 @@ public class GameScreen extends Screen {
 	@Override
 	public void render(Bitmap bitmap) {				
 		super.render(bitmap);
+		
+		if (!initIsFinished) {
+			return;
+		}
+		
+		if (thePlayer.findFirstChild("Tools").getChildren().size() != 0) {
+			bitmap.blendFill(this.invertoryShortcutPanel.x, this.invertoryShortcutPanel.y, 
+					this.invertoryShortcutPanel.x + this.invertoryShortcutPanel.getWidth() - 1, 
+					this.invertoryShortcutPanel.y + this.invertoryShortcutPanel.getHeight() - 1, 
+					0xaa000000);
+		}
+		
+		bitmap.draw(this.invertoryShortcutPanel.render(), this.invertoryShortcutPanel.x, this.invertoryShortcutPanel.y);
 		
 		if (pauseMenuEnabled) {
 			bitmap.blendFill(0, 0, engine.getWidth(), engine.getHeight(), 0xaa000000);
@@ -174,7 +262,7 @@ public class GameScreen extends Screen {
 		
 		pauseMenuEnabled = false;
 		theWorld.active = true;
-		this.getContentPane().remove(pausePanel);
+		this.getContentPane().getCompoments().removeIf(e -> e == this.pausePanel);
 		this.getContentPane().get(1).setActive(true);
 		this.getContentPane().get(2).setActive(true);
 	}
@@ -185,7 +273,7 @@ public class GameScreen extends Screen {
 		chatBar.setFocused(false);
 		chatBarEnabled = false;
 		chatBar.text = "";
-		this.getContentPane().remove(chatBar);
+		this.getContentPane().getCompoments().removeIf(e -> e == this.chatBar);
 	}
 
 	@Override
@@ -213,13 +301,21 @@ public class GameScreen extends Screen {
 			}
 		}
 		
-		if (eventKey == Keyboard.KEY_R) {
+		if (eventKey == Keyboard.KEY_R && this.thePlayer.canMove) {
 			this.thePlayer.damage(100);
+		}
+		
+		if (eventKey == Keyboard.KEY_P && this.thePlayer.canMove) {
+			theWorld.root.printTree(true);
 		}
 	}
 	
-	public void tick() {
-		boolean busy = engine.wManager.activeWindow != null || pauseMenuEnabled || chatBarEnabled || !this.thePlayer.isAlive();
+	public void tick() {	
+		if (!initIsFinished) {
+			return;
+		}
+		
+		boolean busy = (engine.wManager != null ? engine.wManager.activeWindow != null : false) || pauseMenuEnabled || chatBarEnabled || !this.thePlayer.isAlive() || !this.theWorld.isActive();
 		
 		if (thePlayer.canMove && busy) {
 			thePlayer.canMove = false;
@@ -233,8 +329,10 @@ public class GameScreen extends Screen {
 			thePlayer.centerCamera(this.theWorld, engine, 57, 64);
 		}
 		
-		healthBar.value = thePlayer.health;
-		healthBar.maxValue = thePlayer.maxHealth;
+		if (this.healthBar != null) {
+			healthBar.value = thePlayer.health;
+			healthBar.maxValue = thePlayer.maxHealth;
+		}
 	}
 
 	public void sendMessage(String message) {

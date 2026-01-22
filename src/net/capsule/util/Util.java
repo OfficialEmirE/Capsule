@@ -1,18 +1,34 @@
 package net.capsule.util;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
 
 import org.json.JSONObject;
 
 import me.ramazanenescik04.diken.SystemInfo;
+import me.ramazanenescik04.diken.game.World;
 import net.capsule.account.Account;
 
 public class Util {
@@ -147,12 +163,210 @@ public class Util {
 	   return null;
    }
    
+   public static BufferedImage getImageWeb(URL uri) {
+	   try {
+		   return ImageIO.read(uri);
+	   } catch (Exception e) {
+		   System.err.println("Failed to fetch image from URL: " + uri.toString());
+		   try {
+			   return ImageIO.read(net.capsule.Capsule.class.getResourceAsStream("/missingIcon.png"));
+		   } catch (Exception e2) {
+			   return null;
+		   }
+	   }
+   }
+   
    public static BufferedImage getImageWeb(URI uri) {
 	   try {
 		   return ImageIO.read(uri.toURL());
 	   } catch (Exception e) {
 		   System.err.println("Failed to fetch image from URL: " + uri.toString());
-		   return null;
+		   try {
+			   return ImageIO.read(net.capsule.Capsule.class.getResourceAsStream("/missingIcon.png"));
+		   } catch (Exception e2) {
+			   return null;
+		   }
 	   }
    }
+   
+   public synchronized static void downloadFile(
+           URI downloadURI,
+           File outputFile,
+           Consumer<DownloadProgress> progressConsumer
+   ) throws IOException, InterruptedException {
+
+       HttpClient client = HttpClient.newBuilder()
+    		   .followRedirects(HttpClient.Redirect.ALWAYS) // Bu satırı ekleyin
+    	       .build();
+
+       HttpRequest request = HttpRequest.newBuilder()
+    		   .uri(downloadURI)
+    		   .header("User-Agent", "Capsule-UtilDownloadFile")
+    		   .header("Cache-Control", "no-cache")
+    		   .header("Pragma", "no-cache")
+               .GET()
+               .build();
+
+       HttpResponse<InputStream> response =
+               client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+       long contentLength = response.headers()
+               .firstValueAsLong("Content-Length")
+               .orElse(-1);
+
+       Files.createDirectories(outputFile.toPath().getParent());
+       
+       if (response.statusCode() >= 400) {
+    	   throw new IOException("status code: " + response.statusCode());
+       }
+
+       try (InputStream in = response.body();
+            OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+
+           byte[] buffer = new byte[8192];
+           long downloaded = 0;
+
+           long lastTime = System.nanoTime();
+           long lastBytes = 0;
+           int lastPercent = 0;
+
+           int read;
+           while ((read = in.read(buffer)) != -1) {
+               out.write(buffer, 0, read);
+               downloaded += read;
+
+               long now = System.nanoTime();
+               long deltaTime = now - lastTime;
+
+               if (deltaTime >= 1_000_000_000L) { // 1 saniye
+                   long deltaBytes = downloaded - lastBytes;
+                   double speedKBps = (deltaBytes / 1024.0)
+                           / (deltaTime / 1_000_000_000.0);
+
+                   int percent = contentLength > 0
+                           ? (int) ((downloaded * 100) / contentLength)
+                           : -1;
+
+                   if (percent != lastPercent) {
+                       lastPercent = percent;
+                       if (progressConsumer != null) {
+                    	   progressConsumer.accept(
+                                   new DownloadProgress("Downloading File", percent, speedKBps, false)
+                           );
+                       }
+                   }
+
+                   lastBytes = downloaded;
+                   lastTime = now;
+               }
+           }
+       }
+       
+       if (progressConsumer != null) {
+    	   progressConsumer.accept(new DownloadProgress("Finished Downloaded File", 100, 0, true));
+       }
+   }
+   
+   public synchronized static World downloadGame(String apiKey, int id, Consumer<DownloadProgress> progressConsumer) {
+	   URI gameUri = URI.create("http://capsule.net.tr/api/v1/games/getdata.php?id=" + id + "&apiKey=" + apiKey);
+	   File tempWorldFile = new File(Util.getDirectory() + "cache/" + id + "-" + System.currentTimeMillis() + ".dew");
+	   tempWorldFile.deleteOnExit();
+	   
+	   World theWorld = null;
+	   try {
+		   downloadFile(gameUri, tempWorldFile, progressConsumer);
+		   
+		   if (progressConsumer != null) {
+	    	   progressConsumer.accept(
+	                   new DownloadProgress("Importing World File" , 0, 0, false)
+	           );
+	       }
+		   theWorld = World.loadWorld(tempWorldFile);
+		   if (progressConsumer != null) {
+	    	   progressConsumer.accept(
+	                   new DownloadProgress("Imported World File", 100, 0, true)
+	           );
+	       }
+	   } catch (Exception e) {
+		   e.printStackTrace();
+		   tempWorldFile.delete();
+		   
+		   if (progressConsumer != null) {
+	    	   progressConsumer.accept(
+	                   new DownloadProgress("Error Downloading Game: " + e.getMessage(), 0, 0, false)
+	           );
+	       }
+	   }
+	   return theWorld;
+   }
+   
+   public static void uploadGame(
+           String id,
+           String apiKey,
+           File dewFile
+   ) throws Exception {
+
+       String boundary = "----JavaBoundary" + UUID.randomUUID();
+
+       HttpRequest.BodyPublisher body =
+               build(boundary, id, apiKey, dewFile);
+
+       HttpRequest request = HttpRequest.newBuilder(URI.create("http://capsule.net.tr/api/v1/games/publish.php"))
+               .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+               .POST(body)
+               .build();
+
+       HttpClient client = HttpClient.newHttpClient();
+
+       HttpResponse<String> response =
+               client.send(request, HttpResponse.BodyHandlers.ofString());
+
+       System.out.println("Status: " + response.statusCode());
+       System.out.println("Body: " + response.body());
+   }
+   
+   private static HttpRequest.BodyPublisher build(
+           String boundary,
+           String id,
+           String apiKey,
+           File file
+   ) throws IOException {
+
+       var byteArrayOutputStream = new ByteArrayOutputStream();
+       var writer = new PrintWriter(
+               new OutputStreamWriter(byteArrayOutputStream, StandardCharsets.UTF_8),
+               true
+       );
+
+       // id
+       writer.append("--").append(boundary).append("\r\n");
+       writer.append("Content-Disposition: form-data; name=\"id\"\r\n\r\n");
+       writer.append(id).append("\r\n");
+
+       // apikey
+       writer.append("--").append(boundary).append("\r\n");
+       writer.append("Content-Disposition: form-data; name=\"apikey\"\r\n\r\n");
+       writer.append(apiKey).append("\r\n");
+
+       // file
+       writer.append("--").append(boundary).append("\r\n");
+       writer.append(
+               "Content-Disposition: form-data; name=\"file\"; filename=\""
+                       + file.getName() + "\"\r\n"
+       );
+       writer.append("Content-Type: application/octet-stream\r\n\r\n");
+       writer.flush();
+
+       Files.copy(file.toPath(), byteArrayOutputStream);
+       byteArrayOutputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+
+       // end
+       writer.append("--").append(boundary).append("--\r\n");
+       writer.flush();
+
+       return HttpRequest.BodyPublishers.ofByteArray(
+               byteArrayOutputStream.toByteArray()
+       );
+   }
 }
+

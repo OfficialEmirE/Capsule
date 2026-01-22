@@ -21,18 +21,17 @@ import me.ramazanenescik04.diken.resource.IOResource;
 import me.ramazanenescik04.diken.resource.IResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
-import net.capsule.game.node.MaterialPart;
 import net.capsule.gui.GameSelectionScreen;
 import net.capsule.gui.LoginScreen;
+import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public Account account;
-	
-	//Oyun Motorları
-	public DikenEngine gameEngine;
-	
+	public static final Version version = new Version("0.1.0");
 	public static Capsule instance;
+	
+	public Account account;
+	public DikenEngine gameEngine;
 	
 	public Capsule() {		
 		this.gameEngine = new DikenEngine(null, 320 * 2, 240 * 2, 2);
@@ -42,14 +41,13 @@ public class Capsule {
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {}
-		
-		
+		this.gameEngine.setResizable(true);
+		this.gameEngine.start();
 		this.gameEngine.addOnCloseRunnable(() -> {
 			if (this.account != null) {
 				this.account.saveAccountLocalFile();
 			}
 		});
-		this.gameEngine.start();
 	}
 	
 	public void close() {
@@ -72,6 +70,7 @@ public class Capsule {
 			File inst_dir = new File(install_directory);
 			File log_dir = new File(log_directory);
 			File game_dir = new File(game_installed_directory);
+			File versions_dir = new File(Util.getDirectory() + "versions/");
 			if (!inst_dir.exists()) {
 				inst_dir.mkdir();
 			}
@@ -82,6 +81,10 @@ public class Capsule {
 			
 			if (!game_dir.exists()) {
 				game_dir.mkdir();
+			}
+			
+			if (!versions_dir.exists()) {
+				versions_dir.mkdir();
 			}
 			
 			Config.defaultConfigFile = new File(Util.getDirectory(), "config.dat");
@@ -155,7 +158,7 @@ public class Capsule {
 		instance.account.saveAccountLocalFile();
 		
 		if (argMap.containsKey("studio") || argMap.containsKey("s")) {
-			
+			Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor());
 		} else {
 			if (argMap.containsKey("game")) {
 				
@@ -189,7 +192,6 @@ public class Capsule {
 		
 		ArrayBitmap materials = new ArrayBitmap(IOResource.loadResourceAndCut(Capsule.class.getResourceAsStream("/materials.png"), 16, 16));
 		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "materials"), (IResource)materials);
-		MaterialPart.setMaterialTexture(materials.bitmap);
 	}
 	
 	public static Map<String, String> parseArgs(String[] args) {
