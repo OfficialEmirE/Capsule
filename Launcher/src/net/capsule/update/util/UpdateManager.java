@@ -6,9 +6,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.json.JSONArray;
@@ -18,19 +17,24 @@ import net.capsule.Version;
 
 public class UpdateManager {
 	public static final String GITHUB_REPO_URI = "https://api.github.com/repos/Ramazanenescik04/Capsule/releases/latest";
-	public static UpdateManager instance;
+	public static UpdateManager instance = new UpdateManager();
 	
-	private Version repoVersion;
-	private URI latestClientZipURI;
+	private Version repoVersion = VersionChecker.getClientVersion();
+	private URI downloadFileURIs[];
+	private List<File> libs = new ArrayList<>();
 	
 	public void installAndRunUpdate(Consumer<DownloadProgress> progressConsumer, Consumer<UpdateException> crash) {
 		if (updateIsAvailable()) {
-			File newDownloadLocation = new File(Util.getDirectory() + "cache/" + repoVersion.toString() + "-build.zip");
+			File newDownloadLocation = new File(Util.getDirectory() + "jars/Capsule.jar");
 			
 			Thread.startVirtualThread(() -> {
 				try {
-					System.out.println(latestClientZipURI);
-					Util.downloadFile(latestClientZipURI, newDownloadLocation, progressConsumer);
+					for (URI uri : downloadFileURIs) {
+						Util.downloadFile(uri, newDownloadLocation, progressConsumer);
+					}
+					if (progressConsumer != null) {
+						progressConsumer.accept(new DownloadProgress("Finished Downloaded File", 100, 0, true));
+				    }
 				} catch (IOException | InterruptedException e) {
 					newDownloadLocation.delete();
 					if (crash == null) {
@@ -41,35 +45,20 @@ public class UpdateManager {
 					crash.accept(new UpdateException(e.getMessage(), e));
 				}
 			});
+		} else {
+			if (progressConsumer != null) {
+				progressConsumer.accept(new DownloadProgress("No Update :3", 100, 0, true));
+			}
 		}
 	}
 	
-	public void startUpdateChecker() {
-        // Başlangıçtan 5 saniye sonra çalışır, her 24 saatte bir tekrarlar
-		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-		    Thread t = new Thread(runnable);
-		    t.setDaemon(true); // İşte sihirli dokunuş burası!
-		    return t;
-		});
-
-		// Artık güvenle başlatabilirsin
-		scheduler.scheduleAtFixedRate(() -> {
-		    System.out.println("Güncelleme kontrol ediliyor...");
-		    checkUpdate();
-		}, 0, 24 * 60, TimeUnit.MINUTES);
-    }
+	public List<File> getCapsuleLibs() {
+		return new ArrayList<File>(libs);
+	}
 	
 	public boolean updateIsAvailable() {
 	    // repoVersion, eldeki versiyondan büyükse ( > 0 ) güncelleme vardır.
 	    return repoVersion.compareTo(VersionChecker.getClientVersion()) > 0;
-	}
-	
-	public void checkUpdate() {
-		getRepoVersionAndDownloadURL();
-		
-		if (updateIsAvailable()) {
-			
-		}
 	}
 	
 	public void getRepoVersionAndDownloadURL() {
@@ -93,15 +82,17 @@ public class UpdateManager {
 
                 // 2. Dosyaları (Assets) listele
                 JSONArray assets = jsonResponse.getJSONArray("assets");
-                
+                downloadFileURIs = new URI[assets.length()];
                 for (int i = 0; i < assets.length(); i++) {
                     JSONObject asset = assets.getJSONObject(i);
                     String fileName = asset.getString("name");
                     String downloadUrl = asset.getString("browser_download_url");
                     
-                    if (fileName.equals(/*"build.zip"*/"DikenEngine.jar")) {
-                    	this.latestClientZipURI = URI.create(downloadUrl + "?t=" + System.currentTimeMillis());
-                    }
+                    if (!fileName.equals("Capsule.jar"))
+                    	this.libs.add(new File(Util.getDirectory() + "jars/" + fileName));
+                    
+                    
+                    this.downloadFileURIs[i] = URI.create(downloadUrl + "?t=" + System.currentTimeMillis());
                 }
             } else {
                 System.out.println("Hata: " + response.statusCode());

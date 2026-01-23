@@ -229,7 +229,7 @@ public class Util {
        }
        
        if (progressConsumer != null) {
-    	   progressConsumer.accept(new DownloadProgress("Finished Downloaded File", 100, 0, true));
+    	   progressConsumer.accept(new DownloadProgress("Finished Downloaded File", 100, 0, false));
        }
    }
 }

@@ -6,6 +6,10 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import net.capsule.update.util.UpdateManager;
+import net.capsule.update.util.Util;
+import net.capsule.update.util.VersionChecker;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -14,13 +18,19 @@ import javax.swing.UIManager;
 import javax.swing.JButton;
 import java.awt.Color;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import java.awt.Font;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class UpdateFrame extends JFrame {
-
+	private static final File capsuleExecLocation = new File(Util.getDirectory() + "jars/Capsule.jar");
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
+	private JProgressBar bar;
 
 	/**
 	 * Launch the application.
@@ -34,6 +44,56 @@ public class UpdateFrame extends JFrame {
 					UpdateFrame frame = new UpdateFrame();
 					frame.setLocationRelativeTo(null);
 					frame.setVisible(true);
+					
+					UpdateManager um = UpdateManager.instance;
+					um.getRepoVersionAndDownloadURL();
+					um.installAndRunUpdate((dp) -> {
+						frame.bar.setValue(dp.percent());
+						
+						if (dp.isFinished()) {
+							frame.dispose();
+							try {
+								VersionChecker.saveUsingLatestVersion();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+							
+							try {
+								StringBuilder cpBuilder = new StringBuilder();
+								cpBuilder.append(capsuleExecLocation.getAbsolutePath());
+								for (File files : um.getCapsuleLibs()) {
+									cpBuilder.append(";" + files.getAbsolutePath());
+								}
+								
+								Process p = Runtime.getRuntime().exec(new String[] {
+										"java",
+										"-cp",
+										cpBuilder.toString(),
+										"net.capsule.Capsule"
+								});
+								// Get the error stream
+					            InputStreamReader isr = new InputStreamReader(p.getErrorStream());
+					            BufferedReader br = new BufferedReader(isr);
+
+					            String line;
+					            while ((line = br.readLine()) != null) {
+					                System.out.println("Error: " + line);
+					            }
+
+					            // Wait for the process to finish
+					            int exitCode = p.waitFor();
+					            System.out.println("Exit Code: " + exitCode);
+							} catch (IOException | InterruptedException e) {
+								e.printStackTrace();
+								JOptionPane.showMessageDialog(frame, "Launch Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+								frame.dispose();
+							}
+						}
+					}, (crash) -> {
+						crash.printStackTrace();
+						JOptionPane.showMessageDialog(frame, "Update Error: " + crash.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+						frame.dispose();
+					});
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -60,12 +120,13 @@ public class UpdateFrame extends JFrame {
 		contentPane.add(downPanel, BorderLayout.SOUTH);
 		downPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
-		JProgressBar progressBar = new JProgressBar();
-		progressBar.setPreferredSize(new Dimension(500,30));
-		downPanel.add(progressBar);
+		bar = new JProgressBar();
+		bar.setPreferredSize(new Dimension(500,30));
+		downPanel.add(bar);
 		
 		JButton cancelButton = new JButton("Cancel");
 		cancelButton.setPreferredSize(new Dimension(100, 33));
+		cancelButton.setEnabled(false);
 		downPanel.add(cancelButton);
 		
 		JPanel panel = new ImagePanel();
