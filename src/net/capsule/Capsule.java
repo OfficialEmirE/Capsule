@@ -4,10 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import org.json.JSONObject;
 
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.SystemInfo;
@@ -27,7 +32,8 @@ import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final Version version = new Version("0.1.2");
+	public static final String GITHUB_REPO_URI = "https://api.github.com/repos/Ramazanenescik04/Capsule/releases/latest";
+	public static final Version version = new Version("0.1.3");
 	public static Capsule instance;
 	
 	public Account account;
@@ -48,6 +54,8 @@ public class Capsule {
 				this.account.saveAccountLocalFile();
 			}
 		});
+		
+		checkUpdate();
 	}
 	
 	public void close() {
@@ -158,7 +166,14 @@ public class Capsule {
 		instance.account.saveAccountLocalFile();
 		
 		if (argMap.containsKey("studio") || argMap.containsKey("s")) {
-			Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor());
+			int gameID = -1;
+			String value = argMap.get("studio");
+			
+			if (!value.isEmpty()) {
+				gameID = Integer.parseInt(value);
+			}
+			
+			Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor(gameID));
 		} else {
 			if (argMap.containsKey("game")) {
 				String id = argMap.get("game");
@@ -205,7 +220,7 @@ public class Capsule {
             if (arg.startsWith("--")) {
                 // --key=value veya --key value
                 String key = arg.substring(2);
-                String value = "true";
+                String value = "";
 
                 if (key.contains("=")) {
                     String[] parts = key.split("=", 2);
@@ -220,7 +235,7 @@ public class Capsule {
             } else if (arg.startsWith("-")) {
                 // -a veya -a value
                 String key = arg.substring(1);
-                String value = "true";
+                String value = "";
 
                 if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
                     value = args[++i];
@@ -232,6 +247,37 @@ public class Capsule {
 
         return options;
     }
+	
+	private void checkUpdate() {
+		var repoVersion = Capsule.version;
+		try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GITHUB_REPO_URI))
+                    .header("Accept", "application/vnd.github+json")
+                    // .header("Authorization", "Bearer YOUR_TOKEN") // Hız sınırı için gerekebilir
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                // JSON Ayrıştırma
+                JSONObject jsonResponse = new JSONObject(response.body());
+
+                // 1. Tag ismini al
+                String tagName = jsonResponse.getString("tag_name");
+                repoVersion = new Version(tagName);
+            } else {
+                System.out.println("Hata: " + response.statusCode());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		
+		if (repoVersion.compareTo(Capsule.version) > 0) {
+			OptionWindow.showMessageNoWait("Update Available! Please restart Capsule.\n" + Capsule.version + " -> " + repoVersion, "Warning", OptionWindow.WARNING_MESSAGE, 0, null);
+		}
+	}
 	
 	static {
 		Bitmap capsuleLogo = (Bitmap) IOResource.loadResource(Capsule.class.getResourceAsStream("/title.png"), EnumResource.IMAGE);

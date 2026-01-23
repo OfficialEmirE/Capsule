@@ -27,8 +27,10 @@ import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.EnumResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
+import net.capsule.Capsule;
 import net.capsule.game.GameScreen;
 import net.capsule.game.Player;
+import net.capsule.util.Util;
 
 public class WorldEditor extends Screen {
     
@@ -121,16 +123,21 @@ public class WorldEditor extends Screen {
         theWorld.addNode(tool);
     }
 
-    public WorldEditor() {
-        this.theWorld = new World("TestGame", 100, 100);
-        theWorld.addResource("materials", ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "materials")));
-        theWorld.addNode(new Sky(0xffcefbf9 + 0xff7d7d7d));
-        
-        Player tool = new Player(100, 0);
-        tool.setName("NPC-Capsule");
-        tool.setUserAvatar("Capsule");
-        theWorld.addNode(tool);
-        //generateTestWorld();
+    public WorldEditor(int gameID) {
+    	if (gameID < 0) {
+    		this.theWorld = new World("TestGame", 100, 100);
+            theWorld.addResource("materials", ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "materials")));
+            theWorld.addNode(new Sky(0xffcefbf9 + 0xff7d7d7d));
+            
+            Player tool = new Player(100, 0);
+            tool.setName("NPC-Capsule");
+            tool.setUserAvatar("Capsule");
+            theWorld.addNode(tool);
+            //generateTestWorld();
+    	} else {
+    		theWorld = Util.downloadGame(Capsule.instance.account.getApiKey().toString(), gameID, null);
+			theWorld.addResource("materials", ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "materials")));
+    	}
     }
 
     // ... (startPlayTest ve updateNodeList metodları aynı) ...
