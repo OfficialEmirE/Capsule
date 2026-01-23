@@ -89,7 +89,7 @@ public class GameSelectionScreen extends Screen {
 		games.setBackground(new RandomPositionBg(gamesPanelBg));
 		games.setFilter(filter);
 		games.setPlayPressedConsumer((game) -> {
-			this.engine.setCurrentScreen(new GameLoadingScreen(game));
+			this.engine.setCurrentScreen(new GameLoadingScreen(game.getGameId()));
 		});
 		
 		this.getContentPane().add(games);

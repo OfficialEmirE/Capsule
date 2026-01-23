@@ -5,7 +5,6 @@ import me.ramazanenescik04.diken.gui.compoment.ProgressBar;
 import me.ramazanenescik04.diken.gui.screen.Screen;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
-import net.capsule.game.CapsuleGame;
 import net.capsule.game.GameScreen;
 import net.capsule.gui.GameSelectionScreen;
 import net.capsule.util.Util;
@@ -13,10 +12,10 @@ import net.capsule.util.Util;
 public class GameLoadingScreen extends Screen {
 	
 	private ProgressBar loadingBar;
-	private CapsuleGame gameData;
+	private int gameData = -1;
 	private String progressString = "Loading...";
 
-	public GameLoadingScreen(CapsuleGame game) {
+	public GameLoadingScreen(int game) {
 		gameData = game;
 		//TODO
 	}
@@ -30,7 +29,7 @@ public class GameLoadingScreen extends Screen {
 		this.getContentPane().add(loadingBar);
 		//End: Download Game
 		Thread.startVirtualThread(() -> {
-			World theWorld = Util.downloadGame(Capsule.instance.account.getApiKey().toString(), gameData.getGameId(), (progressData) -> {
+			World theWorld = Util.downloadGame(Capsule.instance.account.getApiKey().toString(), gameData, (progressData) -> {
 				this.loadingBar.text = progressData.toString();
 				this.loadingBar.value = progressData.percent();
 				this.progressString = "Loading Game - " + progressData.progressName();

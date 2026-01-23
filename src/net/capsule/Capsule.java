@@ -27,7 +27,7 @@ import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final Version version = new Version("0.1.0");
+	public static final Version version = new Version("0.1.1");
 	public static Capsule instance;
 	
 	public Account account;
@@ -162,8 +162,9 @@ public class Capsule {
 		} else {
 			if (argMap.containsKey("game")) {
 				
-			}
-			Capsule.instance.gameEngine.setCurrentScreen(new GameSelectionScreen());
+			} else {
+				Capsule.instance.gameEngine.setCurrentScreen(new GameSelectionScreen());
+			}	
 		}
 	}
 	
