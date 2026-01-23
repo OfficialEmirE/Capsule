@@ -11,6 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import net.capsule.Version;
 
 public class UpdateManager {
@@ -58,56 +61,14 @@ public class UpdateManager {
 	
 	public boolean updateIsAvailable() {
 	    // repoVersion, eldeki versiyondan büyükse ( > 0 ) güncelleme vardır.
-	    return repoVersion.compareTo(Capsule.version) > 0;
+	    return repoVersion.compareTo(VersionChecker.getClientVersion()) > 0;
 	}
 	
 	public void checkUpdate() {
 		getRepoVersionAndDownloadURL();
 		
 		if (updateIsAvailable()) {
-			int e = OptionWindow.showMessage("Update available! Would you like to update?\n" + Capsule.version.toString() + " -> " + repoVersion.toString(), "Update available", OptionWindow.PLAIN_MESSAGE, OptionWindow.YES_NO_OPTION);
 			
-			if (e == OptionWindow.YES_BUTTON) {
-				OptionWindow proccessWindow = new OptionWindow("Downloading Update\nPlease Wait.", "Downloading Update", OptionWindow.INFO_MESSAGE, OptionWindow.OK_BUTTON);
-				proccessWindow.getContentPane().getCompoments().forEach(btn -> btn.setActive(false));
-				ProgressBar bar = new ProgressBar(2, 18, proccessWindow.width - 2, 16);
-				bar.value = 0;
-				proccessWindow.getContentPane().add(bar);
-				proccessWindow.setCloseable(false);
-				proccessWindow.resized();
-				
-				proccessWindow.setLocation(
-					(DikenEngine.getEngine().getWidth() / 2 - proccessWindow.getWidth() / 2) ,
-					(DikenEngine.getEngine().getHeight()  / 2 - proccessWindow.getHeight()  / 2)
-				);
-				
-				DikenEngine.getEngine().wManager.addWindow(proccessWindow);
-				
-				//İndir!
-				installAndRunUpdate((dp) -> {
-					bar.text = dp.progressName() + " - " + dp.toString();
-					bar.value = dp.percent();
-					
-					if (dp.isFinished()) {
-						proccessWindow.getContentPane().getCompoments().forEach(btn -> btn.setActive(true));
-						proccessWindow.setCloseable(true);
-						
-						while (!proccessWindow.closed) {
-							try {
-								Thread.sleep(1);
-							} catch (InterruptedException e1) {
-								e1.printStackTrace();
-							}
-						}
-						OptionWindow.showMessageNoWait("Yay :3", ":3", OptionWindow.INFO_MESSAGE, OptionWindow.OK_BUTTON, null);
-					}
-				}, (crash) ->  {
-					crash.printStackTrace();
-					proccessWindow.close();
-						
-					OptionWindow.showMessageNoWait("Updating Error: " + crash.getMessage(), "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON, null);
-				});
-			}
 		}
 	}
 	
