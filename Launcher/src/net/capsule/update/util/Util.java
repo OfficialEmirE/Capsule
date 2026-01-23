@@ -148,11 +148,34 @@ public class Util {
    
    public static BufferedImage getImageWeb(URI uri) {
 	   try {
-		   return ImageIO.read(uri.toURL());
+		   HttpClient client = HttpClient.newBuilder()
+	    		   .followRedirects(HttpClient.Redirect.ALWAYS) // Bu satırı ekleyin
+	    	       .build();
+
+	       HttpRequest request = HttpRequest.newBuilder()
+	    		   .uri(uri)
+	    		   .header("User-Agent", "Capsule-UtilDownloadFile")
+	    		   .header("Cache-Control", "no-cache")
+	    		   .header("Pragma", "no-cache")
+	               .GET()
+	               .build();
+
+	       HttpResponse<InputStream> response =
+	               client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+	       if (response.statusCode() >= 400) {
+	    	   throw new IOException("status code: " + response.statusCode());
+	       }
+
+	       try (InputStream in = response.body();) {
+			   return ImageIO.read(in);
+		   } catch (Exception e) {
+			   throw new IOException(e.getMessage(), e);
+		   }
 	   } catch (Exception e) {
 		   System.err.println("Failed to fetch image from URL: " + uri.toString());
 		   return null;
-	   }
+	   }  
    }
    
    public synchronized static void downloadFile(
@@ -217,7 +240,7 @@ public class Util {
                        lastPercent = percent;
                        if (progressConsumer != null) {
                     	   progressConsumer.accept(
-                                   new DownloadProgress("Downloading File", percent, speedKBps, false)
+                                   new DownloadProgress("Downloading File: " + outputFile.getName(), percent, speedKBps, false)
                            );
                        }
                    }
@@ -229,7 +252,7 @@ public class Util {
        }
        
        if (progressConsumer != null) {
-    	   progressConsumer.accept(new DownloadProgress("Finished Downloaded File", 100, 0, false));
+    	   progressConsumer.accept(new DownloadProgress("Finished Downloaded File: " + outputFile.getName(), 100, 0, false));
        }
    }
 }

@@ -6,35 +6,35 @@ import net.capsule.Version;
 
 public class VersionChecker {
 	private static final String CAPSULE_PATH = Util.getDirectory() + "jars/";
-	private static final String USING_VERSION_FILE = Util.getDirectory() + "version/using.dat";
-	private static Version clientVersion = new Version("0.0.0");
-	
-	public static Version getClientVersion() {
-		return new Version(new String(clientVersion.toString()));
-	}
+	private static final String USING_VERSION_FILE = Util.getDirectory() + "versions/";
+	public static Version clientVersion = new Version("0.0.0");
+	public static Version dikenVersion = new Version("0.0.0");
 	
 	public static void saveUsingLatestVersion() throws IOException {
 		File using = new File(USING_VERSION_FILE);
 		
 		if (!using.exists()) {
-			using.mkdir();
+			using.mkdirs();
 		}
 		
-		DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(using));
-		outputStream.writeUTF(clientVersion.toString());
-		outputStream.close();
+		try (DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(new File(using, "using.dat")))) {
+			outputStream.writeUTF(clientVersion.toString());
+			outputStream.writeUTF(dikenVersion.toString());
+			outputStream.close();
+		}
+		
 	}
 	
-	static {
+	public static void initVersionChecker() {
 		File file = new File(CAPSULE_PATH);
 		
 		if (!file.exists())
-			file.mkdir();
+			file.mkdirs();
 		
 		File using = new File(USING_VERSION_FILE);
 		
 		if (!using.exists()) {
-			using.mkdir();
+			using.mkdirs();
 			
 			try {
 				saveUsingLatestVersion();
@@ -42,12 +42,13 @@ public class VersionChecker {
 				e.printStackTrace();
 			}
 		} else {
-			try {
-				DataInputStream outputStream = new DataInputStream(new FileInputStream(using));
+			try (DataInputStream outputStream = new DataInputStream(new FileInputStream(new File(using, "using.dat")));){
 				var version = outputStream.readUTF();
+				var version2 = outputStream.readUTF();
 				outputStream.close();
 				
 				clientVersion = new Version(version);
+				dikenVersion = new Version(version2);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
