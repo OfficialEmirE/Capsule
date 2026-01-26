@@ -7,7 +7,6 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="res"/>
-	<classpathentry kind="lib" path="/DikenEngine/libs/commons-lang3-3.17.0.jar"/>
 	<classpathentry kind="lib" path="/DikenEngine/libs/jinput.jar" sourcepath="C:/Users/Ramazanenescik04/Downloads/lwjgl-source-2.9.3.zip">
 		<attributes>
 			<attribute name="javadoc_location" value="https://legacy.lwjgl.org/javadoc"/>
@@ -26,5 +25,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="/DikenEngine/libs/ReportBugs.jar"/>
 	<classpathentry kind="lib" path="DikenEngine.jar" sourcepath="/DikenEngine/src"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/DikenEngine"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,7 +1,12 @@
 package net.capsule.gui;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -12,7 +17,7 @@ import org.lwjgl.opencl.api.Filter;
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.gui.Hitbox;
 import me.ramazanenescik04.diken.gui.compoment.Button;
-import me.ramazanenescik04.diken.gui.compoment.GuiCompoment;
+import me.ramazanenescik04.diken.gui.compoment.GuiComponent;
 import me.ramazanenescik04.diken.gui.compoment.Panel;
 import net.capsule.game.CapsuleGame;
 import net.capsule.util.Util;
@@ -53,6 +58,8 @@ public class GameListPanel extends Panel {
 	public void init(DikenEngine engine) {
 		prevRect = this.getBounds();
 		
+		loadGameList();
+		
 		pageBack = new Button("Page Back", 10, getHeight() - 40, 100, 34).setRunnable(() -> {
 		    if (page > 0) {
 		        page--;
@@ -67,12 +74,6 @@ public class GameListPanel extends Panel {
 		        refreshGamesGrid();
 		    }
 		});
-		
-		try {
-			loadGameList();
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
 		
 		this.add(pageBack);
 		this.add(pageForward);
@@ -90,8 +91,8 @@ public class GameListPanel extends Panel {
 			
 			refreshGamesGrid();
 			
-			GuiCompoment compoment1 = this.get(this.count() - 2);
-			GuiCompoment compoment2 = this.get(this.count() - 1);
+			GuiComponent compoment1 = this.get(this.count() - 2);
+			GuiComponent compoment2 = this.get(this.count() - 1);
 			
 			compoment1.setLocation(10, getHeight() - 40);
 			compoment2.setLocation(getWidth() - 110, getHeight() - 40);
@@ -171,7 +172,27 @@ public class GameListPanel extends Panel {
 		this.games.add(game);
 	}
 	
-	protected void loadGameList() throws MalformedURLException {
+	// Source - https://stackoverflow.com/a
+	// Posted by Harshal Parekh
+	// Retrieved 2026-01-24, License - CC BY-SA 4.0
+
+	@SuppressWarnings("deprecation")
+	static URI getValidURL(String invalidURLString){
+	    try {
+	        // Convert the String and decode the URL into the URL class
+	        URL url = new URL(URLDecoder.decode(invalidURLString, StandardCharsets.UTF_8.toString()));
+
+	        // Use the methods of the URL class to achieve a generic solution
+	        URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+	        // return String or
+	        // uri.toURL() to return URL object
+	        return uri;
+	    } catch (URISyntaxException | UnsupportedEncodingException | MalformedURLException ignored) {
+	        return URI.create("about:blank");
+	    }
+	}
+	
+	protected void loadGameList() {
 		JSONObject gamesData = new JSONObject(Util.getWebData("http://capsule.net.tr/api/v1/games/"));
 		
 		if (!gamesData.getString("status").equals("success")) {
@@ -187,8 +208,7 @@ public class GameListPanel extends Panel {
 			String iconUrl = gameJson.getString("image_url");
 			String authorUsername = gameJson.optString("username", "Anonymouns");
 			
-			@SuppressWarnings("deprecation")
-			CapsuleGame game = new CapsuleGame(new URL(iconUrl), gameId, gameName, authorUsername);
+			CapsuleGame game = new CapsuleGame(getValidURL(iconUrl), gameId, gameName, authorUsername);
 			game.setConsumer(consumer);
 			games.add(game);
 			

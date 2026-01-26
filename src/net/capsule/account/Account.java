@@ -3,6 +3,8 @@ package net.capsule.account;
 import java.util.UUID;
 import java.util.prefs.Preferences;
 
+import me.ramazanenescik04.diken.log.ConsoleLog;
+
 public class Account {
 	private final String username;
 	private final UUID apiKey; // şifre yerine uuid kullanmak daha güvenli
@@ -57,6 +59,7 @@ public class Account {
 	        prefs.put("username", username);
 	        prefs.flush(); // diske yazar
 	        System.out.println("[Capsule] Saved Account Data");
+	        ConsoleLog.sendLog("[Capsule] Saved Account Data");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -178,16 +178,16 @@ public class GameScreen extends Screen {
 		pausePanel.clear();
 		Button resumeButton = new Button("Resume The Game", pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2) - 25, 120, 22).setRunnable(() -> {			
 			this.closePauseMenu();
-		}).setButtonColor(0xff005cff);
+		}).setButtonColor(0xff005cff).setTextColor(0xffffffff);
 		Button settingsButton = new Button("Settings", pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2), 120, 22).setRunnable(() -> {
 			if (!this.engine.wManager.isWindowActive(SettingsWindow.class)) {
 				this.engine.wManager.addWindow(new SettingsWindow());
 			};
-		}).setButtonColor(0xff005cff);
+		}).setButtonColor(0xff005cff).setTextColor(0xffffffff);
 		Button exitButton = new Button("Exit The Game", pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2) + 25, 120, 22).setRunnable(() -> {
 			this.engine.setCurrentScreen(parent);
 			System.gc();
-		}).setButtonColor(0xff005cff);
+		}).setButtonColor(0xff005cff).setTextColor(0xffffffff);
 		pausePanel.add(resumeButton);
 		pausePanel.add(settingsButton);
 		pausePanel.add(exitButton);

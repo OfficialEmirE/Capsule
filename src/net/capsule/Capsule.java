@@ -19,6 +19,7 @@ import me.ramazanenescik04.diken.SystemInfo;
 import me.ramazanenescik04.diken.game.Animation;
 import me.ramazanenescik04.diken.game.Config;
 import me.ramazanenescik04.diken.gui.window.OptionWindow;
+import me.ramazanenescik04.diken.log.ConsoleLog;
 import me.ramazanenescik04.diken.resource.ArrayBitmap;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.EnumResource;
@@ -32,18 +33,18 @@ import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final String GITHUB_REPO_URI = "https://api.github.com/repos/Ramazanenescik04/Capsule/releases/latest";
-	public static final Version version = new Version("0.1.3");
+	public static final Version version = new Version("0.2.1");
 	public static Capsule instance;
 	
 	public Account account;
 	public DikenEngine gameEngine;
 	
-	public Capsule() {		
+	public Capsule() {				
 		this.gameEngine = new DikenEngine(null, 320 * 2, 240 * 2, 2);
 		this.gameEngine.setTitle("Capsule");
 		try {
-			this.gameEngine.setIcon((Bitmap) IOResource.loadResource(URI.create("http://capsule.net.tr/favicon.png").toURL().openStream(), EnumResource.IMAGE));
+			Bitmap icon = (Bitmap) IOResource.loadResource(URI.create("http://capsule.net.tr/favicon.png").toURL().openStream(), EnumResource.IMAGE);
+			this.gameEngine.setIcon(icon.resize(32, 32), icon.resize(16, 16));
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {}
@@ -96,6 +97,7 @@ public class Capsule {
 			}
 			
 			Config.defaultConfigFile = new File(Util.getDirectory(), "config.dat");
+			ConsoleLog.setLogDirectory(log_dir);
 		} catch (Exception var10) {
 			var10.printStackTrace();
 			System.exit(1);
@@ -253,7 +255,7 @@ public class Capsule {
 		try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GITHUB_REPO_URI))
+                    .uri(URI.create("http://capsule.net.tr/api/v1/assets/check_update.php?name=capsule"))
                     .header("Accept", "application/vnd.github+json")
                     // .header("Authorization", "Bearer YOUR_TOKEN") // Hız sınırı için gerekebilir
                     .build();
@@ -269,9 +271,11 @@ public class Capsule {
                 repoVersion = new Version(tagName);
             } else {
                 System.out.println("Hata: " + response.statusCode());
+                ConsoleLog.sendLog("Error: " + response.statusCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
+            ConsoleLog.sendLog("Error: " + e.getMessage());
         }
 		
 		if (repoVersion.compareTo(Capsule.version) > 0) {

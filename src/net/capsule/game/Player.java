@@ -59,7 +59,6 @@ public class Player extends Humanoid {
 	    int value = Integer.parseInt(avatarData.getString("color").substring(1), 16);
 	    this.color = PixelToColor.colorAddAlpha(value, 255);
 	    this.body = this.body.replaceColor(0xffffffff, this.color);
-	    this.hand = this.hand.replaceColor(0xffffffff, this.color).replaceColor(0xffc2c2c2, PixelToColor.blendColor(color, 0xffc2c2c2));
 	}
 
 	@Override
@@ -71,7 +70,6 @@ public class Player extends Humanoid {
 		 this.defaultFace = default_avatar.getBitmap(0, 2);
 		 
 		 this.body = this.body.replaceColor(0xffffffff, this.color);
-		 this.hand = this.hand.replaceColor(0xffffffff, this.color).replaceColor(0xffc2c2c2, PixelToColor.blendColor(color, 0xffc2c2c2));
 	}
 
 }

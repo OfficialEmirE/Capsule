@@ -248,8 +248,11 @@ public class WorldEditor extends Screen {
         
         topPanel.add(new Button("Place", 275, 2, 50, 20).setRunnable(() -> {
             this.selectedTool = 0;
-            // Yeni bir parça oluştur ki yerleştirebilelim
             this.selectedNode = new Part(0, 0, 16, 16); 
+            // Yeni bir parça oluştur ki yerleştirebilelim
+            /*PartPropertiesWindow partProperties = new PartPropertiesWindow(10, 10, this.selectedNode);
+            this.engine.wManager.addWindow(partProperties);*/
+
             //this.selectedNode.setSolid(false);
             System.out.println("Mode: Place");
         }));

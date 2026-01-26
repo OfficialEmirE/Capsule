@@ -42,15 +42,15 @@ public class CapsuleGame extends Panel {
 			if (consumer != null) {
 				consumer.accept(this);
 			}
-		});
+		}).setTextColor(0xffffffff);
 		
 		playButton.bColor = 0xff00ff00;
 		this.add(playButton);
 		
-		LinkButton gamePageButton = new LinkButton("See Game Page", 256 - 110, 256 - 42, 96, 32).setURI(URI.create("https://capsule.net.tr/game.php?id=" + gameId));	
+		LinkButton gamePageButton = new LinkButton("See Game Page", 256 - 110, 256 - 42, 96, 32).setURI(URI.create("http://capsule.net.tr/game.php?id=" + gameId));	
 		this.add(gamePageButton);
 		
-		LinkText author = new LinkText("By: " + authorUsername, 20, 170).setURI(URI.create("https://capsule.net.tr/profile/?username=" + authorUsername));
+		LinkText author = new LinkText("By: " + authorUsername, 20, 170).setURI(URI.create("http://capsule.net.tr/profile/?username=" + authorUsername));
 		this.add(author);
 	}
 	

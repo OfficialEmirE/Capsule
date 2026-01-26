@@ -25,7 +25,7 @@ public class GameSelectionScreen extends Screen {
 	private Bitmap capsuleLogoImage, gamesPanelBg;
 	
 	private TextField searchField;
-	private GameListPanel games;
+	private GameListPanel games = new GameListPanel(0, 0, 60, 60);
 	private Panel warningPanel;
 
 	private Filter<CapsuleGame> filter;
