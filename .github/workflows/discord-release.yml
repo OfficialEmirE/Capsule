@@ -22,3 +22,4 @@ jobs:
             ${{ github.event.release.body }}
 
             🔗 ${{ github.event.release.html_url }}
+            <@&1465683191099560070>
