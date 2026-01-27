@@ -339,7 +339,7 @@ public class WorldEditor extends Screen {
 
     @Override
     public void resized() {
-        if (topPanel != null) topPanel.setBounds(0, 0, engine.getWidth(), 52);
+        if (topPanel != null) { topPanel.setBounds(0, 0, engine.getWidth(), 52); topPanel.get(9).setBounds(engine.getWidth() - 54, 2, 50, 20);}
         if (leftPanel != null) leftPanel.setBounds(0, 52, 200, engine.getHeight() - 52);
         if (editorPanel != null) editorPanel.resized();
     }

@@ -33,7 +33,7 @@ import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final Version version = new Version("0.2.1");
+	public static final Version version = new Version("0.2.2");
 	public static Capsule instance;
 	
 	public Account account;
