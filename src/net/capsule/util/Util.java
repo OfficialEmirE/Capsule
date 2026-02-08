@@ -1,5 +1,7 @@
 package net.capsule.util;
 
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -51,23 +53,34 @@ public class Util {
 
    public static String getWebData(URI url) {
       try {
-         BufferedReader reader = new BufferedReader(new InputStreamReader(url.toURL().openStream()));
-         StringBuilder sb = new StringBuilder();
-         String s = "";
-         
-         while((s = reader.readLine()) != null) {
-			sb.append(s);
-		 }
+    	  HttpClient client = HttpClient.newBuilder()
+       		   .followRedirects(HttpClient.Redirect.ALWAYS) // Bu satırı ekleyin
+       	       .build();
+
+          HttpRequest request = HttpRequest.newBuilder()
+       		   .uri(url)
+       		   .header("User-Agent", "Capsule-UtilDownloadFile")
+       		   .header("Cache-Control", "no-cache")
+       		   .header("Pragma", "no-cache")
+               .GET()
+               .build();
+
+          HttpResponse<String> response =
+                  client.send(request, HttpResponse.BodyHandlers.ofString());
+          
+          if (response.statusCode() >= 400) {
+        	  throw new IOException("Status code: " + response.statusCode() + " - Body" + response.body());
+          }
        
-		 return sb.toString();
-	  } catch (IOException var4) {
+          return response.body();
+	  } catch (IOException | InterruptedException var4) {
 		  var4.printStackTrace();
-		 return """
+		  return """
 		 		{
 		 			"status": "error",
-		 			"message": "Cannot access the URL"
+		 			"message": "%s"
 		 		}
-		 		""";
+		 		""".formatted(var4.getMessage());
 	  }
    }
 
@@ -367,6 +380,56 @@ public class Util {
        return HttpRequest.BodyPublishers.ofByteArray(
                byteArrayOutputStream.toByteArray()
        );
+   }
+
+   public static boolean IsThisGameYours(int gameID, Account account) {
+	   if (gameID == -1)
+		   return true;
+	   
+	   JSONObject gamesData = new JSONObject(Util.getWebData("http://capsule.net.tr/api/v1/games/"));
+		
+		if (!gamesData.getString("status").equals("success")) {
+			System.err.println("Failed to fetch games data: " + gamesData.getString("message"));
+			return false;
+		}
+		
+		for (Object gameObj : gamesData.getJSONArray("data")) {
+			JSONObject gameJson = (JSONObject) gameObj;
+			
+			int gameId = gameJson.getInt("id");
+			String authorUsername = gameJson.optString("username", "Anonymouns");
+			
+			if (gameId == gameID && authorUsername.equals(account.getUsername()))
+				return true;
+		}
+		return false;
+   }
+
+   public static BufferedImage scaleImage(BufferedImage img, int width, int height) {
+	   BufferedImage scaledImg = new BufferedImage(width, height, img.getType());
+	   Image resizedImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+	   
+	   Graphics2D g = scaledImg.createGraphics();
+	   g.drawImage(resizedImg, 0, 0, null);
+	   g.dispose();
+	   
+	   return scaledImg;
+   }
+
+   public static String postWebData(URI uri, String string) throws IOException, InterruptedException {	   
+	   HttpClient client = HttpClient.newHttpClient();
+
+       HttpRequest request = HttpRequest.newBuilder()
+    		   .uri(uri)
+    		   .header("User-Agent", "Capsule-UtilDownloadFile")
+    		   .header("Cache-Control", "no-cache")
+    		   .header("Pragma", "no-cache")
+               .POST(HttpRequest.BodyPublishers.ofString(string))
+               .build();
+
+       HttpResponse<String> response =
+               client.send(request, HttpResponse.BodyHandlers.ofString());
+	   return response.body();
    }
 }
 

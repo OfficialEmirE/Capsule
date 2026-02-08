@@ -41,7 +41,7 @@ public class SoloPlayer extends Player {
 			resetWalkAnimation();
 			this.idleAnim.setCurrentFrame(0);
 		}
-		movementPlayer.tick();
+		movementPlayer.tick(engine);
 		super.update(world, engine);
 	}
 	@Override

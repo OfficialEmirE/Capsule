@@ -1,11 +1,10 @@
 package net.capsule.game;
 
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.lwjgl.input.Keyboard;
 
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.game.World;
@@ -47,9 +46,9 @@ public class GameScreen extends Screen {
 		System.gc();
 		
 		chatMessageList = new ArrayList<>();
-		chatBar = new TextField(2, engine.getHeight() - 22, engine.getWidth() - 2, 20);
-		pausePanel = new Panel(0, 0, engine.getWidth(), engine.getHeight());
-		invertoryShortcutPanel = new Panel(engine.getWidth() / 2 - 2 / 2, (engine.getHeight() - 26) - 36, 2, 34) {
+		chatBar = new TextField(2, engine.getScaledHeight() - 22, engine.getScaledWidth() - 2, 20);
+		pausePanel = new Panel(0, 0, engine.getScaledWidth(), engine.getScaledHeight());
+		invertoryShortcutPanel = new Panel(engine.getScaledWidth() / 2 - 2 / 2, (engine.getScaledHeight() - 26) - 36, 2, 34) {
 		    // Tool ve Buton eşleşmesini tutmak için (gerekirse sonradan erişmek için)
 		    private Map<Tool, ImageButton> buttons = new HashMap<>();
 		    private ImageButton selectedButton;
@@ -66,7 +65,7 @@ public class GameScreen extends Screen {
 		        int slotWidth = currentSize * 34;
 		        // Not: setBounds işlemini sadece boyut değiştiyse yapmak performansı artırır
 		        if (this.getWidth() != slotWidth + 2) {
-		             this.setBounds(engine.getWidth() / 2 - (slotWidth + 2) / 2, (engine.getHeight() - 26) - 36, slotWidth + 2, 34);
+		             this.setBounds(engine.getScaledWidth() / 2 - (slotWidth + 2) / 2, (engine.getScaledHeight() - 26) - 36, slotWidth + 2, 34);
 		        }
 
 		        // Eğer araç sayısı değiştiyse listeyi güncelle
@@ -130,7 +129,7 @@ public class GameScreen extends Screen {
 		        }
 		    }
 		};
-		healthBar = new ProgressBar(engine.getWidth() / 2 - 110 / 2, engine.getHeight() - 26, 110, 16);
+		healthBar = new ProgressBar(engine.getScaledWidth() / 2 - 110 / 2, engine.getScaledHeight() - 26, 110, 16);
 		healthBar.text = "Health";
 		healthBar.color = 0xff4fff4f;
 		healthBar.color2 = 0xff33a633;
@@ -141,7 +140,7 @@ public class GameScreen extends Screen {
 			return;
 		}
 		
-		theWorld.setBounds(0, 0, engine.getWidth(), engine.getHeight());
+		theWorld.setBounds(0, 0, engine.getScaledWidth(), engine.getScaledHeight());
 		theWorld.addNode(thePlayer);
 		thePlayer.setFollowCamera(true);
 		
@@ -197,12 +196,12 @@ public class GameScreen extends Screen {
 		if (this.theWorld == null)
 			return;
 		
-		chatBar.setBounds(2, engine.getHeight() - 22, engine.getWidth() - 2, 20);
-		pausePanel.setSize(engine.getWidth(), engine.getHeight());
-		theWorld.setSize(engine.getWidth(), engine.getHeight());
-		healthBar.setBounds(engine.getWidth() / 2 - 110 / 2, engine.getHeight() - 26, 110, 16);
+		chatBar.setBounds(2, engine.getScaledHeight() - 22, engine.getScaledWidth() - 2, 20);
+		pausePanel.setSize(engine.getScaledWidth(), engine.getScaledHeight());
+		theWorld.setSize(engine.getScaledWidth(), engine.getScaledHeight());
+		healthBar.setBounds(engine.getScaledWidth() / 2 - 110 / 2, engine.getScaledHeight() - 26, 110, 16);
 		
-		invertoryShortcutPanel.setLocation(engine.getWidth() / 2 - invertoryShortcutPanel.getWidth() / 2, (engine.getHeight() - 26) - 36);
+		invertoryShortcutPanel.setLocation(engine.getScaledWidth() / 2 - invertoryShortcutPanel.getWidth() / 2, (engine.getScaledHeight() - 26) - 36);
 		
 		pausePanel.get(0).setLocation(pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2) - 25);
 		pausePanel.get(1).setLocation(pausePanel.width / 2 - 120 / 2, (pausePanel.height / 2 - 20 / 2));
@@ -227,14 +226,14 @@ public class GameScreen extends Screen {
 		bitmap.draw(this.invertoryShortcutPanel.render(), this.invertoryShortcutPanel.x, this.invertoryShortcutPanel.y);
 		
 		if (pauseMenuEnabled) {
-			bitmap.blendFill(0, 0, engine.getWidth(), engine.getHeight(), 0xaa000000);
+			bitmap.blendFill(0, 0, engine.getScaledWidth(), engine.getScaledHeight(), 0xaa000000);
 			
 			bitmap.draw(this.pausePanel.render(), 0, 0);
 		}
 		
 		for (int i = 0; i < this.chatMessageList.size(); i++) {
 			String text = this.chatMessageList.get(i);
-			bitmap.drawText(text, 2, this.engine.getHeight() - (i * 9) - 35, false);
+			bitmap.drawText(text, 2, this.engine.getScaledHeight() - (i * 9) - 35, false);
 		}
 	}
 	
@@ -281,31 +280,31 @@ public class GameScreen extends Screen {
 		super.keyDown(eventCharacter, eventKey);
 		
 		if (!chatBarEnabled && !pauseMenuEnabled) {
-			if (eventKey == Keyboard.KEY_DIVIDE) {
+			if (eventKey == KeyEvent.VK_DIVIDE) {
 				this.openChatMenu();
 	
-			} else if (eventKey == Keyboard.KEY_ESCAPE) {
+			} else if (eventKey == KeyEvent.VK_ESCAPE) {
 				this.openPauseMenu();
 			}
 		} else if (chatBarEnabled && !pauseMenuEnabled) {
-			if (eventKey == Keyboard.KEY_ESCAPE || eventKey == Keyboard.KEY_RETURN) {
-				if (eventKey == Keyboard.KEY_RETURN) {
-					sendMessage(Capsule.instance.account.getUsername() + ": " + chatBar.text);
+			if (eventKey == KeyEvent.VK_ESCAPE || eventKey == KeyEvent.VK_ENTER) {
+				if (eventKey == KeyEvent.VK_ENTER && !chatBar.text.trim().isEmpty()) {
+					sendMessage(Capsule.instance.account.getUsername() + ": " + chatBar.text.trim());
 				}
 				
 				this.closeChatMenu();
 			}
 		} else if (!chatBarEnabled && pauseMenuEnabled) {
-			if (eventKey == Keyboard.KEY_ESCAPE) {
+			if (eventKey == KeyEvent.VK_ESCAPE) {
 				this.closePauseMenu();
 			}
 		}
 		
-		if (eventKey == Keyboard.KEY_R && this.thePlayer.canMove) {
+		if (eventKey == KeyEvent.VK_R && this.thePlayer.canMove) {
 			this.thePlayer.damage(100);
 		}
 		
-		if (eventKey == Keyboard.KEY_P && this.thePlayer.canMove) {
+		if (eventKey == KeyEvent.VK_P && this.thePlayer.canMove) {
 			theWorld.root.printTree(true);
 		}
 	}

@@ -1,5 +1,9 @@
 package net.capsule;
 
+import java.awt.EventQueue;
+import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -11,6 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import javax.swing.JFrame;
+import javax.swing.UIManager;
 
 import org.json.JSONObject;
 
@@ -27,47 +34,60 @@ import me.ramazanenescik04.diken.resource.IOResource;
 import me.ramazanenescik04.diken.resource.IResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
+import net.capsule.gui.DockView;
 import net.capsule.gui.GameSelectionScreen;
 import net.capsule.gui.LoginScreen;
 import net.capsule.studio.*;
 import net.capsule.util.Util;
 
 public class Capsule {
-	public static final Version version = new Version("0.2.2");
+	public static final Version version = new Version("0.4.0");
 	public static Capsule instance;
 	
 	public Account account;
 	public DikenEngine gameEngine;
+	public JFrame gameFrame;
 	
 	public Capsule() {				
-		this.gameEngine = new DikenEngine(null, 320 * 2, 240 * 2, 2);
-		this.gameEngine.setTitle("Capsule");
+		gameEngine = new DikenEngine(320 * 4, 240 * 4, 2);
+		
+		gameFrame = new JFrame("Capsule");
+		gameFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		gameFrame.add(gameEngine);
 		try {
 			Bitmap icon = (Bitmap) IOResource.loadResource(URI.create("http://capsule.net.tr/favicon.png").toURL().openStream(), EnumResource.IMAGE);
-			this.gameEngine.setIcon(icon.resize(32, 32), icon.resize(16, 16));
+			gameFrame.setIconImage(Toolkit.getDefaultToolkit().createImage(icon.toBytes("png")));
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {}
-		this.gameEngine.setResizable(true);
-		this.gameEngine.start();
-		this.gameEngine.addOnCloseRunnable(() -> {
-			if (this.account != null) {
-				this.account.saveAccountLocalFile();
+		gameFrame.pack();
+		gameFrame.setLocationRelativeTo(null);
+		gameFrame.setVisible(true);
+		
+		gameFrame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				close();
 			}
 		});
 		
-		checkUpdate();
+		gameEngine.start();
+		
+		Thread.startVirtualThread(() -> checkUpdate());
 	}
 	
 	public void close() {
-		this.gameEngine.close();
+		this.gameEngine.stop();
 		
 		if (this.account != null) {
 			this.account.saveAccountLocalFile();
 		}
+
+		this.gameFrame.dispose();
 	}
 	
 	public static void main(String[] args) {
+		log("Starting Capsule " + version);
 		try {
 			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
 			   Util.findLinuxHomeDirectory();
@@ -107,10 +127,6 @@ public class Capsule {
 		
 		Map<String, String> argMap = parseArgs(args);
 		
-		for (String key : argMap.keySet()) {
-			System.out.println("Arg: " + key + " Value: " + argMap.get(key));
-		}
-		
 		instance.account = Account.getAccountLocalFile();
 		
 		if (argMap.containsKey("login")) {
@@ -142,15 +158,14 @@ public class Capsule {
 			}
 			
 			if (accountFuture.isCancelled()) {
-				instance.gameEngine.close();
+				instance.close();
 			}
 			
 			try {
 				Account account_ = accountFuture.get();
 				if (account_ == null) {
 					OptionWindow.showMessage("Your Account Password and Username Are Incorrect!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
-					instance.gameEngine.close();
-					System.exit(0);
+					instance.close();
 				}
 				
 				Capsule.instance.gameEngine.setCurrentScreen(null);
@@ -159,8 +174,7 @@ public class Capsule {
 				e.printStackTrace();
 			}  finally {
 				if (instance.account == null) {
-					instance.gameEngine.close();
-					System.exit(0);
+					instance.close();
 				}	
 			}
 		}
@@ -175,7 +189,44 @@ public class Capsule {
 				gameID = Integer.parseInt(value);
 			}
 			
-			Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor(gameID));
+			if (!Util.IsThisGameYours(gameID, instance.account)) {
+				OptionWindow.showMessage("Id ile açılan oyun sana ait değil!\nLütfen kendi oyununuzun idsini açın.", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+				throw new RuntimeException("id ile açılan oyun sana ait değil!");
+			} else {
+				EventQueue.invokeLater(() -> {
+					try {
+						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+						
+						JFrame frame = instance.gameFrame;
+						frame.setVisible(false);
+						
+						StudioPanel window = new StudioPanel();
+						frame.addWindowListener(new WindowAdapter() {
+							@Override
+							public void windowClosing(WindowEvent e) {
+								File layoutFile = new File(Util.getDirectory() + "layout.xml");
+								DockView.saveLayout(window.control, layoutFile);
+								
+								try {
+									window.theProject.saveProject();
+								} catch (IOException e1) {
+									e1.printStackTrace();
+								}
+							}
+						});
+						frame.add(window);
+						frame.pack();
+						frame.setLocationRelativeTo(null);
+						frame.setVisible(true);
+						
+						frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+						frame.toFront();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
+				//Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor(gameID));
+			}
 		} else {
 			if (argMap.containsKey("game")) {
 				String id = argMap.get("game");
@@ -270,8 +321,7 @@ public class Capsule {
                 String tagName = jsonResponse.getString("tag_name");
                 repoVersion = new Version(tagName);
             } else {
-                System.out.println("Hata: " + response.statusCode());
-                ConsoleLog.sendLog("Error: " + response.statusCode());
+            	errorLog("Failed to check for updates. HTTP Status: " + response.statusCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -281,6 +331,16 @@ public class Capsule {
 		if (repoVersion.compareTo(Capsule.version) > 0) {
 			OptionWindow.showMessageNoWait("Update Available! Please restart Capsule.\n" + Capsule.version + " -> " + repoVersion, "Warning", OptionWindow.WARNING_MESSAGE, 0, null);
 		}
+	}
+	
+	public static void log(String message) {
+		System.out.println("[Capsule] " + message);
+		ConsoleLog.sendLog(message);
+	}
+	
+	public static void errorLog(String message) {
+		System.err.println("[Capsule] " + message);
+		ConsoleLog.sendLog(ConsoleLog.LogType.ERROR, message);
 	}
 	
 	static {

@@ -1,30 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="res"/>
-	<classpathentry kind="lib" path="/DikenEngine/libs/jinput.jar" sourcepath="C:/Users/Ramazanenescik04/Downloads/lwjgl-source-2.9.3.zip">
-		<attributes>
-			<attribute name="javadoc_location" value="https://legacy.lwjgl.org/javadoc"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/DikenEngine/libs/jna-5.12.1.jar"/>
-	<classpathentry kind="lib" path="/DikenEngine/libs/lwjgl_util.jar" sourcepath="D:/RetroMCP/libraries/org/lwjgl/lwjgl/lwjgl_util/2.9.4/lwjgl_util-2.9.4-sources.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://legacy.lwjgl.org/javadoc"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/DikenEngine/libs/lwjgl.jar" sourcepath="C:/Users/Ramazanenescik04/Downloads/lwjgl-source-2.9.3.zip">
-		<attributes>
-			<attribute name="javadoc_location" value="https://legacy.lwjgl.org/javadoc"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/DikenEngine/libs/ReportBugs.jar"/>
 	<classpathentry kind="lib" path="DikenEngine.jar" sourcepath="/DikenEngine/src"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/DikenEngine"/>
+	<classpathentry kind="lib" path="C:/Users/Ramazanenescik04/Downloads/docking-frames-core-1.1.2p6a.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Ramazanenescik04/Downloads/docking-frames-common-1.1.2p6a.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
-import org.lwjgl.opencl.api.Filter;
 
 import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.gui.Hitbox;
@@ -58,7 +57,7 @@ public class GameListPanel extends Panel {
 	public void init(DikenEngine engine) {
 		prevRect = this.getBounds();
 		
-		loadGameList();
+		Thread.startVirtualThread(() -> loadGameList());
 		
 		pageBack = new Button("Page Back", 10, getHeight() - 40, 100, 34).setRunnable(() -> {
 		    if (page > 0) {

@@ -1,9 +1,11 @@
 package net.capsule.gui;
 
+import java.awt.event.KeyEvent;
 import java.net.URI;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.opencl.api.Filter;
 
+import org.json.JSONObject;
+
+import me.ramazanenescik04.diken.DikenEngine;
 import me.ramazanenescik04.diken.gui.compoment.Button;
 import me.ramazanenescik04.diken.gui.compoment.LinkButton;
 import me.ramazanenescik04.diken.gui.compoment.LinkText;
@@ -19,6 +21,7 @@ import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.Capsule;
 import net.capsule.GameLoadingScreen;
 import net.capsule.game.CapsuleGame;
+import net.capsule.util.Util;
 
 public class GameSelectionScreen extends Screen {
 	
@@ -48,7 +51,7 @@ public class GameSelectionScreen extends Screen {
 	}
 	
 	public void openScreen() {
-		int width = engine.getWidth();
+		int width = engine.getScaledWidth();
 		this.getContentPane().clear();
 		
 		Panel titlePanel = new Panel(0, 0, width, 60);
@@ -85,7 +88,7 @@ public class GameSelectionScreen extends Screen {
 		
 		this.getContentPane().add(titlePanel);
 	
-		games = new GameListPanel(0, 60, width, engine.getHeight() - 60);
+		games = new GameListPanel(0, 60, width, engine.getScaledHeight() - 60);
 		games.setBackground(new RandomPositionBg(gamesPanelBg));
 		games.setFilter(filter);
 		games.setPlayPressedConsumer((game) -> {
@@ -96,15 +99,28 @@ public class GameSelectionScreen extends Screen {
 		
 		warningPanel = new Panel(0, 0, 265, 16) {
 			private Bitmap warningIcon = ((ArrayBitmap)ResourceLocator.getResource("win-icons")).getBitmap(4, 0);
+			private String message;
+			private boolean messageActive = false;
 			
 			@Override
+			public void init(DikenEngine engine) {
+				JSONObject obj = new JSONObject(Util.getWebData("http://capsule.net.tr/api/v1/maintenance/announcement.php"));
+				
+				this.messageActive = obj.getBoolean("announcement_mode");
+				this.message = obj.getString("announcement_message");
+			}
+
+			@Override
 			public Bitmap render() {
+				if (!messageActive)
+					return Bitmap.empty;
+				
 				Bitmap btp = new Bitmap(width, height);
 				btp.clear(0xffbdbd00);
 				btp.draw(warningIcon, 0, 0);
 				btp.drawLine(17, 0, 17, 15, -1, 2);
 				
-				btp.drawText("Capsule - Alpha! Bazı Özellikler Çalışmayabilir!", 19, 2, false);
+				btp.drawText(message, 19, 2, false);
 				return btp;
 			}
 		};
@@ -114,14 +130,14 @@ public class GameSelectionScreen extends Screen {
 		LinkText text = new LinkText("Email: ramazanenescik04@capsule.net.tr", 0, 0).setURI(URI.create("mailto://ramazanenescik04@capsule.net.tr"));
 		this.getContentPane().add(text);
 		text.tick(engine);
-		text.setLocation((engine.getWidth() - text.getWidth()) / 2, engine.getHeight() - 10);
+		text.setLocation((engine.getScaledWidth() - text.getWidth()) / 2, engine.getScaledHeight() - 10);
 	}
 	
 	public void resized() {
-		games.setSize(engine.getWidth(), engine.getHeight() - 60);
+		games.setSize(engine.getScaledWidth(), engine.getScaledHeight() - 60);
 		
 		Panel titlePanel = (Panel) this.getContentPane().get(0);
-		titlePanel.setSize(engine.getWidth(), 60);
+		titlePanel.setSize(engine.getScaledWidth(), 60);
 		
 		LinkButton usernameText = (LinkButton) titlePanel.get(1);
 		usernameText.setLocation(titlePanel.width - usernameText.width - 110, 10);
@@ -134,23 +150,23 @@ public class GameSelectionScreen extends Screen {
 		Button searchButton = (Button) titlePanel.get(4);
 		searchButton.setLocation((titlePanel.getWidth() / 2 + (searchField.width - 20) / 2), 10);
 		
-		warningPanel.setLocation(engine.getWidth() / 2 - warningPanel.getWidth() / 2, 40);	
+		warningPanel.setLocation(engine.getScaledWidth() / 2 - warningPanel.getWidth() / 2, 40);	
 		
 		LinkText text = (LinkText) this.getContentPane().get(3);
-		text.setLocation((engine.getWidth() - text.getWidth()) / 2, engine.getHeight() - 10);
+		text.setLocation((engine.getScaledWidth() - text.getWidth()) / 2, engine.getScaledHeight() - 10);
 	}
 
 	@Override
 	public void render(Bitmap bitmap) {
 		super.render(bitmap);
 		
-		bitmap.drawLine(0, 60, engine.getWidth(), 60, 0xffffffff, 1);
-		bitmap.drawText("Pages " + (games.page + 1) + " / " + games.totalPages, engine.getWidth() / 2, engine.getHeight() - 20, true);
+		bitmap.drawLine(0, 60, engine.getScaledWidth(), 60, 0xffffffff, 1);
+		bitmap.drawText("Pages " + (games.page + 1) + " / " + games.totalPages, engine.getScaledWidth() / 2, engine.getScaledHeight() - 20, true);
 	}
 
 	@Override
 	public void keyDown(char eventCharacter, int eventKey) {
-		if (this.searchField.isFocused() && eventKey == Keyboard.KEY_RETURN) {
+		if (this.searchField.isFocused() && eventKey == KeyEvent.VK_ENTER) {
 			games.page = 0; 
 			games.searchWithFilter(filter);
 		}

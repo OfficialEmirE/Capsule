@@ -57,8 +57,8 @@ public class RandomPositionBg implements IBackground {
     @Override
     public void render(Bitmap canvas) {
         // Ekranı kaplayacak kadar tile çiz (Sadece gerekli alanı tarar)
-        int tilesX = (engine.getWidth() / sprite.w) + 2;
-        int tilesY = (engine.getHeight() / sprite.h) + 2;
+        int tilesX = (engine.getScaledWidth() / sprite.w) + 2;
+        int tilesY = (engine.getScaledHeight() / sprite.h) + 2;
 
         for (int i = -1; i < tilesX; i++) {
             for (int j = -1; j < tilesY; j++) {

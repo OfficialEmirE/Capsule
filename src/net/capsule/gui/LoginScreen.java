@@ -38,11 +38,11 @@ public class LoginScreen extends Screen {
 	}
 	
 	public void openScreen() {
-		int width = engine.getWidth();
-		int height = engine.getHeight();
+		int width = engine.getScaledWidth();
+		int height = engine.getScaledHeight();
 		
-		this.usernameField = new TextField(width / 2 - 100, engine.getHeight() / 2 - 25, 200, 20);
-		this.passwordField = new PasswordField(width / 2 - 100, engine.getHeight() / 2 + 5, 200, 20);
+		this.usernameField = new TextField(width / 2 - 100, engine.getScaledHeight() / 2 - 25, 200, 20);
+		this.passwordField = new PasswordField(width / 2 - 100, engine.getScaledHeight() / 2 + 5, 200, 20);
 		
 		Button loginButton = new Button("Login", width / 2 - 50, height / 2 + 35, 100, 20).setRunnable(() -> {
 			if (finished) {
@@ -82,8 +82,8 @@ public class LoginScreen extends Screen {
 	}
 	
 	public void resized() {
-		int width = engine.getWidth();
-		int height = engine.getHeight();
+		int width = engine.getScaledWidth();
+		int height = engine.getScaledHeight();
 		
 		if (usernameField != null) {
 			usernameField.setBounds(width / 2 - 100, height / 2 - 25, 200, 20);
@@ -111,14 +111,14 @@ public class LoginScreen extends Screen {
 		super.render(bitmap);
 		
 		if (capsuleLogoImage != null) {
-			bitmap.draw(capsuleLogoImage, (engine.getWidth() - capsuleLogoImage.w) / 2, 50);
+			bitmap.draw(capsuleLogoImage, (engine.getScaledWidth() - capsuleLogoImage.w) / 2, 50);
 		}
 		if (statusMessage != null) {
-			bitmap.drawText(statusMessage, engine.getWidth() / 2 - Text.stringBitmapWidth(statusMessage, this.engine.defaultFont) / 2, engine.getHeight() / 2 + 90, false);
+			bitmap.drawText(statusMessage, engine.getScaledWidth() / 2 - Text.stringBitmapWidth(statusMessage, this.engine.defaultFont) / 2, engine.getScaledHeight() / 2 + 90, false);
 		}
 		
-		bitmap.drawText("Username:", engine.getWidth() / 2 - 100, engine.getHeight() / 2 - 35, false);
-		bitmap.drawText("Password:", engine.getWidth() / 2 - 100, engine.getHeight() / 2 - 4, false);
+		bitmap.drawText("Username:", engine.getScaledWidth() / 2 - 100, engine.getScaledHeight() / 2 - 35, false);
+		bitmap.drawText("Password:", engine.getScaledWidth() / 2 - 100, engine.getScaledHeight() / 2 - 4, false);
 	}
 
 }

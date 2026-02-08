@@ -3,6 +3,7 @@ package net.capsule;
 import me.ramazanenescik04.diken.game.World;
 import me.ramazanenescik04.diken.gui.compoment.ProgressBar;
 import me.ramazanenescik04.diken.gui.screen.Screen;
+import me.ramazanenescik04.diken.gui.window.OptionWindow;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.game.GameScreen;
@@ -17,12 +18,11 @@ public class GameLoadingScreen extends Screen {
 
 	public GameLoadingScreen(int game) {
 		gameData = game;
-		//TODO
 	}
 	
 	@Override
 	public void openScreen() {
-		this.loadingBar = new ProgressBar(2, this.engine.getHeight() - 20, this.engine.getWidth() - 4, 16);
+		this.loadingBar = new ProgressBar(2, this.engine.getScaledHeight() - 20, this.engine.getScaledWidth() - 4, 16);
 		this.loadingBar.color = 0xff4fff4f;
 		this.loadingBar.color2 = 0xff33a633;
 		
@@ -34,6 +34,13 @@ public class GameLoadingScreen extends Screen {
 				this.loadingBar.value = progressData.percent();
 				this.progressString = "Loading Game - " + progressData.progressName();
 			});
+			
+			if (theWorld == null) {
+				OptionWindow.showMessageNoWait(this.progressString, "Error", OptionWindow.ERROR_MESSAGE, 0, null);
+				this.engine.setCurrentScreen(new GameSelectionScreen());
+				return;
+			}
+			
 			theWorld.addResource("materials", ResourceLocator.getResource(new ResourceLocator.ResourceKey("capsule", "materials")));
 			this.engine.setCurrentScreen(new GameScreen(new GameSelectionScreen(), theWorld));
 		});
@@ -41,7 +48,7 @@ public class GameLoadingScreen extends Screen {
 
 	@Override
 	public void resized() {
-		this.loadingBar.setBounds(2, this.engine.getHeight() - 20, this.engine.getWidth() - 4, 16);
+		this.loadingBar.setBounds(2, this.engine.getScaledHeight() - 20, this.engine.getScaledWidth() - 4, 16);
 	}
 	
 	@Override
@@ -53,7 +60,7 @@ public class GameLoadingScreen extends Screen {
 	public void render(Bitmap bitmap) {
 		bitmap.fill(0, 0, bitmap.w, bitmap.h, 0xff000000);
 		super.render(bitmap);
-		bitmap.drawText(progressString, 2, bitmap.h - 30, false);
+		bitmap.drawText(progressString, 2, this.engine.getScaledHeight() - 30, false);
 	}
 
 }

@@ -1,10 +1,8 @@
 package net.capsule.studio;
 
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
-
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.opencl.api.Filter;
 
 import me.ramazanenescik04.diken.game.World;
 import me.ramazanenescik04.diken.gui.compoment.Button;
@@ -19,6 +17,7 @@ import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.Capsule;
 
 import net.capsule.game.CapsuleGame;
+import net.capsule.gui.Filter;
 import net.capsule.gui.GameListPanel;
 import net.capsule.gui.RandomPositionBg;
 import net.capsule.util.Util;
@@ -46,7 +45,7 @@ public class PublishGameScreen extends Screen {
 	}
 
 	public void openScreen() {
-		int width = engine.getWidth();
+		int width = engine.getScaledWidth();
 		this.getContentPane().clear();
 		
 		Panel titlePanel = new Panel(0, 0, width, 60);
@@ -70,7 +69,7 @@ public class PublishGameScreen extends Screen {
 		
 		this.getContentPane().add(titlePanel);
 	
-		games = new GameListPanel(0, 60, width, engine.getHeight() - 60);
+		games = new GameListPanel(0, 60, width, engine.getScaledHeight() - 60);
 		games.setBackground(new RandomPositionBg(gamesPanelBg));
 		games.setFilter(searchAndUserFilter);
 		games.setPlayPressedConsumer((game) -> {
@@ -82,7 +81,7 @@ public class PublishGameScreen extends Screen {
 				World.saveWorld(theWorld, savePath);
 			} catch (IOException e) {
 				e.printStackTrace();
-				OptionWindow.showMessageNoWait("Save Error: " + e.getMessage(), "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON, (i) -> this.engine.setCurrentScreen(parent));
+				OptionWindow.showMessageNoWait("Save Error: " + e.getMessage(), "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON, (_) -> this.engine.setCurrentScreen(parent));
 				return;
 			}
 			
@@ -100,10 +99,10 @@ public class PublishGameScreen extends Screen {
 	}
 	
 	public void resized() {
-		games.setSize(engine.getWidth(), engine.getHeight() - 60);
+		games.setSize(engine.getScaledWidth(), engine.getScaledHeight() - 60);
 		
 		Panel titlePanel = (Panel) this.getContentPane().get(0);
-		titlePanel.setSize(engine.getWidth(), 60);
+		titlePanel.setSize(engine.getScaledWidth(), 60);
 		
 		searchField.setLocation((titlePanel.getWidth() / 2 - (searchField.width + 30) / 2), 10);
 		
@@ -115,14 +114,14 @@ public class PublishGameScreen extends Screen {
 	public void render(Bitmap bitmap) {
 		super.render(bitmap);
 		
-		bitmap.drawLine(0, 60, engine.getWidth(), 60, 0xffffffff, 1);
-		bitmap.drawText("Select Publish Game", engine.getWidth() / 2, 45, true);
-		bitmap.drawText("Pages " + (games.page + 1) + " / " + games.totalPages, engine.getWidth() / 2, engine.getHeight() - 20, true);
+		bitmap.drawLine(0, 60, engine.getScaledWidth(), 60, 0xffffffff, 1);
+		bitmap.drawText("Select Publish Game", engine.getScaledWidth() / 2, 45, true);
+		bitmap.drawText("Pages " + (games.page + 1) + " / " + games.totalPages, engine.getScaledWidth() / 2, engine.getScaledHeight() - 20, true);
 	}
 
 	@Override
 	public void keyDown(char eventCharacter, int eventKey) {
-		if (this.searchField.isFocused() && eventKey == Keyboard.KEY_RETURN) {
+		if (this.searchField.isFocused() && eventKey == KeyEvent.VK_ENTER) {
 			games.page = 0; 
 			games.searchWithFilter(searchAndUserFilter);
 		}
