@@ -1,0 +1,21 @@
+gui.play=Play
+gui.options=Options
+gui.info.gameID=To Enter the Game, Please Enter the Game ID
+gui.classicTheme=Classic Theme
+gui.checkUpdate=Check Update
+gui.unlock.BlockedGames=Unlock Blocked Games
+gui.version=Version
+gui.search=Search
+gui.totalLog=Total Log
+gui.clear=Clear
+gui.cancel=Cancel
+gui.openLogFile=Open Log File
+gui.okey=OK
+gui.apply=Apply
+gui.language=Language
+
+welcome.welcome=Welcome
+welcome.about=About
+welcome.news=News
+
+sgl.username=Username

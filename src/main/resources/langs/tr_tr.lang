@@ -1,0 +1,21 @@
+gui.play=Oyna
+gui.options=Ayarlar
+gui.info.gameID=Oyuna Girmek için lütfen Oyunu ID'sini Giriniz
+gui.classicTheme=Klasik Tema
+gui.checkUpdate=Güncelleme Denetle
+gui.unlock.BlockedGames=Engellenmiş Oyunlarının Kilidini Aç
+gui.version=Sürüm
+gui.search=Ara
+gui.totalLog=Toplam Log Dosyası
+gui.clear=Temizle
+gui.cancel=Vazgeç
+gui.openLogFile=Log Dosyaları Aç
+gui.okey=Tamam
+gui.apply=Uygula
+gui.language=Dil
+
+welcome.welcome=Hoş Geldiniz
+welcome.about=Hakkında
+welcome.news=Haberler
+
+sgl.username=Kullanıcı Adı
