@@ -4,13 +4,11 @@ import javax.swing.JLabel;
 
 import bibliothek.gui.dock.common.CControl;
 import bibliothek.gui.dock.common.CGrid;
-import me.ramazanenescik04.diken.game.World;
 import net.capsule.Capsule;
 import net.capsule.gui.DockView;
 import net.capsule.gui.ViewRegistry;
 import net.capsule.studio.windows.ProjectSelectDialog;
 import net.capsule.studio.windows.SceneView;
-import net.capsule.util.GameProject;
 import net.capsule.util.Util;
 
 import java.awt.BorderLayout;

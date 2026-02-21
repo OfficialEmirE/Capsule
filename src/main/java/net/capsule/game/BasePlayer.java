@@ -11,13 +11,13 @@ import me.ramazanenescik04.diken.resource.ResourceLocator;
 import me.ramazanenescik04.diken.tools.PixelToColor;
 import me.ramazanenescik04.diken.tools.Utils;
 
-public class Player extends Humanoid {
+public class BasePlayer extends Humanoid {
 	private static final long serialVersionUID = -5395842731409825680L;
 	protected transient MovementPlayer movementPlayer = new MovementPlayer(this);
 	
 	public transient Bitmap body, hand, defaultFace;
 
-	public Player(int x, int y) {
+	public BasePlayer(int x, int y) {
 		super(x, y, 57, 64);
 		this.setName("Player");
 		this.aabb.setBounds(12, 0, 32, 64);

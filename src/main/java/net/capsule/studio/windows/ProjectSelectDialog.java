@@ -14,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.border.TitledBorder;
 
@@ -73,7 +74,12 @@ public class ProjectSelectDialog extends JDialog {
 				if (dialog.isCancelled())
 					return;
 				
-				//data = dialog.getData();
+				try {
+					data = dialog.getData();
+				} catch (InterruptedException | ExecutionException e1) {
+					e1.printStackTrace();
+					return;
+				}
 				dispose();
 			}
 		});

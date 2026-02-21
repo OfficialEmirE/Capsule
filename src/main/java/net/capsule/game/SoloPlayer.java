@@ -7,7 +7,7 @@ import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.Capsule;
 
-public class SoloPlayer extends Player {
+public class SoloPlayer extends BasePlayer {
 	private static final long serialVersionUID = -8240969167111897631L;
 	
 	private transient Animation leftWalkAnim, rightWalkAnim, idleAnim;

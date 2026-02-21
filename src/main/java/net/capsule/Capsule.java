@@ -138,9 +138,14 @@ public class Capsule {
 			
 			if (account_1 == null) {
 				OptionWindow.showMessage("API_KEY geçerli değil. Lütfen Geçerli bir API_KEY gir", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
-				System.exit(-1);
+				System.exit(1);
 			}
 			instance.account = account_1;
+		}
+		
+		if (instance.account == null) {
+			OptionWindow.showMessage("Hesabınızla Giriş Yapmadınız! Lütfen https://capsule.net.tr'den giriniz!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+			System.exit(1);
 		}
 		
 		instance.account.saveAccountLocalFile();
