@@ -5,15 +5,7 @@ import java.util.prefs.Preferences;
 
 import me.ramazanenescik04.diken.log.ConsoleLog;
 
-public class Account {
-	private final String username;
-	private final UUID apiKey; // şifre yerine uuid kullanmak daha güvenli
-	
-	public Account(String username, UUID apiKey) {
-		this.username = username;
-		this.apiKey = apiKey;
-	}
-	
+public record Account(String username, UUID apiKey) {
 	public String getUsername() {
 		return username;
 	}

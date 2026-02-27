@@ -43,8 +43,7 @@ public class GameLoadingScreen extends Screen {
 			}
 			
 			if (theWorld == null) {
-				OptionWindow.showMessageNoWait(this.progressString, "Error", OptionWindow.ERROR_MESSAGE, 0, null);
-				this.engine.setCurrentScreen(null);
+				OptionWindow.showMessageNoWait(this.progressString, "Error", OptionWindow.ERROR_MESSAGE, 0, (_) -> System.exit(9));
 				return;
 			}
 			

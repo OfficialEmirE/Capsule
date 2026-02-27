@@ -27,6 +27,7 @@ import java.awt.event.WindowEvent;
 
 public class StudioPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
+	public static final String DEFAULT_PROJECT_PATH = Util.getDirectory() + "projects" + File.separatorChar;
 	
 	public CControl control;
 	public GameData theGameData;
@@ -37,24 +38,28 @@ public class StudioPanel extends JPanel {
 	    panel.add(barButton);
 	}
 	
-	public StudioPanel() {
+	public StudioPanel(int gameID) {
 		Capsule.instance.gameFrame.setTitle("Capsule Studio");
-		ProjectSelectDialog dialog = new ProjectSelectDialog(Capsule.instance.gameFrame);
-		dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-		dialog.setLocationRelativeTo(null);
-		dialog.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				dialog.dispose();
-				Capsule.instance.close();
-				
-				System.exit(0);
-			}
-		});
-		dialog.setVisible(true);
 		
-		theGameData = dialog.getGameData();
-		
+		if (gameID != -1) {
+			theGameData = GameData.cloneWebProject(Capsule.instance.account, gameID, new File(DEFAULT_PROJECT_PATH, gameID + ".dew"));
+		} else {
+			ProjectSelectDialog dialog = new ProjectSelectDialog(Capsule.instance.gameFrame);
+			dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+			dialog.setLocationRelativeTo(null);
+			dialog.addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					dialog.dispose();
+					Capsule.instance.close();
+					
+					System.exit(0);
+				}
+			});
+			dialog.setVisible(true);
+			
+			theGameData = dialog.getGameData();
+		}
 		setPreferredSize(new java.awt.Dimension(800, 600));
 		
 	    setLayout(new BorderLayout(0, 0));

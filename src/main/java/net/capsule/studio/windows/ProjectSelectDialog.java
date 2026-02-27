@@ -5,6 +5,8 @@ import javax.swing.JPanel;
 
 import net.capsule.studio.EditorUtil;
 import net.capsule.studio.GameData;
+import net.capsule.studio.StudioPanel;
+import net.capsule.studio.windows.clone.CloneProjectDialog;
 import net.capsule.util.ImagePanel;
 import net.capsule.Capsule;
 
@@ -67,7 +69,7 @@ public class ProjectSelectDialog extends JDialog {
 		JButton newProjectButton = new JButton("New Project");
 		newProjectButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				NewProjectDialog dialog = new NewProjectDialog(frame);
+				var dialog = new NewProjectDialog(frame);
 				dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 				dialog.setVisible(true);
 				
@@ -88,7 +90,7 @@ public class ProjectSelectDialog extends JDialog {
 		JButton openProjectButton = new JButton("Open Project");
 		openProjectButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				File file = EditorUtil.openSelectFolderDialog();
+				var file = EditorUtil.openSelectFolderDialog(new File(StudioPanel.DEFAULT_PROJECT_PATH));
 				if (file == null) {
 					return;
 				}
@@ -106,6 +108,24 @@ public class ProjectSelectDialog extends JDialog {
 		buttons.add(openProjectButton);
 		
 		JButton cloneProjectButton = new JButton("Clone Project");
+		cloneProjectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				var dialog = new CloneProjectDialog(frame);
+				dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+				dialog.setVisible(true);
+				
+				if (dialog.isCancelled())
+					return;
+				
+				try {
+					data = dialog.getData();
+				} catch (InterruptedException | ExecutionException e1) {
+					e1.printStackTrace();
+					return;
+				}
+				dispose();
+			}
+		});
 		buttons.add(cloneProjectButton);
 		
 		JScrollPane scrollPane = new JScrollPane();
@@ -117,9 +137,6 @@ public class ProjectSelectDialog extends JDialog {
 		
 		JLabel text = new JLabel("Previously Opened Projects");
 		panel.add(text);
-		
-		JButton btnNewButton = new JButton("New button");
-		panel.add(btnNewButton);
 	}
 
 	public GameData getGameData() {

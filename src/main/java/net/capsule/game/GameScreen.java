@@ -221,13 +221,6 @@ public class GameScreen extends Screen {
 			return;
 		}
 		
-		if (thePlayer.findFirstChild("Tools").getChildren().size() != 0) {
-			bitmap.blendFill(this.invertoryShortcutPanel.x, this.invertoryShortcutPanel.y, 
-					this.invertoryShortcutPanel.x + this.invertoryShortcutPanel.getWidth() - 1, 
-					this.invertoryShortcutPanel.y + this.invertoryShortcutPanel.getHeight() - 1, 
-					0xaa000000);
-		}
-		
 		bitmap.draw(this.invertoryShortcutPanel.render(), this.invertoryShortcutPanel.x, this.invertoryShortcutPanel.y);
 		
 		if (pauseMenuEnabled) {
