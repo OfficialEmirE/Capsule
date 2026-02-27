@@ -77,7 +77,7 @@ public class ProjectSelectDialog extends JDialog {
 				try {
 					data = dialog.getData();
 				} catch (InterruptedException | ExecutionException e1) {
-					e1.printStackTrace();
+					JOptionPane.showMessageDialog(frame, "Error: " + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 				dispose();
@@ -97,7 +97,6 @@ public class ProjectSelectDialog extends JDialog {
 					data = GameData.loadProject(file);
 				} catch ( ReflectiveOperationException | IOException e1) {
 					JOptionPane.showMessageDialog(frame, "Error: " + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-					e1.printStackTrace();
 					return;
 				}
 				
