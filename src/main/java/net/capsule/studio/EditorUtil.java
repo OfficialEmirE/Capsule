@@ -14,7 +14,7 @@ public class EditorUtil {
 	
 	private EditorUtil() {}
 	
-	public static File openSelectFolderDialog() {
+	public static File openSelectFolderDialog(File currentDir) {
 		Frame owner = new Frame();
 	    owner.setUndecorated(true);
 	    owner.setAlwaysOnTop(true);
@@ -25,6 +25,9 @@ public class EditorUtil {
 		chooser.setDialogTitle("Select Project File");
 		chooser.setFileFilter(ff_new);
 		chooser.setAcceptAllFileFilterUsed(false);
+		
+		if (currentDir != null)
+			chooser.setCurrentDirectory(currentDir);
 		
 		int result = chooser.showOpenDialog(owner);
 		owner.dispose();

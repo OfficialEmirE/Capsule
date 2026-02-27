@@ -1,6 +1,5 @@
 package net.capsule;
 
-import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
@@ -15,6 +14,8 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -35,6 +36,8 @@ import me.ramazanenescik04.diken.resource.IResource;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
 import net.capsule.gui.DockView;
+import net.capsule.gui.GameSelectionScreen;
+import net.capsule.gui.LoginScreen;
 import net.capsule.studio.*;
 import net.capsule.util.Util;
 
@@ -92,14 +95,12 @@ public class Capsule {
 			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
 			   Util.findLinuxHomeDirectory();
 			}
-			
-			String install_directory = Util.getDirectory();
-			String log_directory = Util.getDirectory() + "logs/";
-			String game_installed_directory = Util.getDirectory() + "cache/";
-			File inst_dir = new File(install_directory);
-			File log_dir = new File(log_directory);
-			File game_dir = new File(game_installed_directory);
+
+			File inst_dir = new File(Util.getDirectory());
+			File log_dir = new File(Util.getDirectory() + "logs/");
+			File game_dir = new File(Util.getDirectory() + "cache/");
 			File versions_dir = new File(Util.getDirectory() + "versions/");
+			File projects_dir = new File(Util.getDirectory() + "projects/");
 			if (!inst_dir.exists()) {
 				inst_dir.mkdir();
 			}
@@ -113,6 +114,10 @@ public class Capsule {
 			}
 			
 			if (!versions_dir.exists()) {
+				versions_dir.mkdir();
+			}
+			
+			if (!projects_dir.exists()) {
 				versions_dir.mkdir();
 			}
 			
@@ -143,9 +148,53 @@ public class Capsule {
 			instance.account = account_1;
 		}
 		
+		if (argMap.containsKey("login")) {
+			String account = argMap.get("login");
+			
+			System.out.println("Logging in with account: " + account);
+			
+			String username = account.split(":")[0];
+			String password = account.split(":")[1];
+			
+			Account account_1 = Util.login(username, password);
+			if (account_1 == null) {
+				OptionWindow.showMessage("Unable to Log In to Your Account! Login Dialog Opens", "Login Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+			}
+			instance.account = account_1;
+		}
+		
 		if (instance.account == null) {
-			OptionWindow.showMessage("Hesabınızla Giriş Yapmadınız! Lütfen https://capsule.net.tr'den giriniz!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
-			System.exit(1);
+			LoginScreen loginScreen = new LoginScreen();
+			Capsule.instance.gameEngine.setCurrentScreen(loginScreen);
+			
+			Future<Account> accountFuture = loginScreen.getAccount();
+			while (!(accountFuture.isDone() || accountFuture.isCancelled())) {
+				try {Thread.sleep(100);} catch (InterruptedException e) {}
+			}
+			
+			if (accountFuture.isCancelled()) {
+				instance.close();
+				System.exit(0);
+			}
+			
+			try {
+				Account account_ = accountFuture.get();
+				if (account_ == null) {
+					OptionWindow.showMessage("Your Account Password and Username Are Incorrect!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+					instance.close();
+					System.exit(1);
+				}
+				
+				Capsule.instance.gameEngine.setCurrentScreen(null);
+				instance.account = account_;
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+			} finally {
+				if (instance.account == null) {
+					instance.close();
+					System.exit(0);
+				}	
+			}
 		}
 		
 		instance.account.saveAccountLocalFile();
@@ -162,6 +211,7 @@ public class Capsule {
 				OptionWindow.showMessage("Düzenlemeye çalıştığınız oyun size ait değil! Lütfen kendi oyununuzu düzenleyin!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
 				System.exit(-1);
 			} else {
+				final int __gameID = gameID;
 				EventQueue.invokeLater(() -> {
 					try {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -169,7 +219,7 @@ public class Capsule {
 						JFrame frame = instance.gameFrame;
 						frame.setVisible(false);
 						
-						StudioPanel window = new StudioPanel();
+						StudioPanel window = new StudioPanel(__gameID);
 						frame.addWindowListener(new WindowAdapter() {
 							@Override
 							public void windowClosing(WindowEvent e) {
@@ -201,14 +251,7 @@ public class Capsule {
 				String id = argMap.get("game");
 				Capsule.instance.gameEngine.setCurrentScreen(new GameLoadingScreen(Integer.parseInt(id)));
 			} else {
-				try {
-					if(Desktop.isDesktopSupported()) {
-						Desktop desktop = Desktop.getDesktop();
-						desktop.browse(URI.create("http://capsule.net.tr/"));
-					}
-				} catch (IOException e) {
-				}
-				System.exit(0);
+				Capsule.instance.gameEngine.setCurrentScreen(new GameSelectionScreen());
 			}	
 		}
 	}

@@ -46,6 +46,10 @@ public class GameData {
 	}
 	
 	public void saveWorld() throws IOException {
+		var file = worldPath.getParentFile();
+		if (!file.exists())
+			file.mkdirs();
+		
 		World.saveWorld(theWorld, worldPath);
 	}
 	

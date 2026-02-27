@@ -160,6 +160,20 @@ public class Util {
 	   return backslashes(System.getProperty("user.home") + "/Desktop/");
    }
    
+   public static Account login(String username, String password) {
+	   var jsonData = getWebData("http://capsule.net.tr/api/v1/account/login.php?username=" + username + "&password=" + password);
+	   
+	   JSONObject json = new JSONObject(jsonData);
+	   if (json.getString("status").equals("success")) {
+		   JSONObject userObject = json.getJSONObject("user");
+		   UUID apiKey = UUID.fromString(userObject.getString("apikey"));
+		   Account account = new Account(username, apiKey);
+		   return account;
+	   } else {
+		   throw new RuntimeException("Login Error: " + json.getString("message"));
+	   }
+   }
+   
    public static Account login(UUID apiKey) throws IOException, InterruptedException {
 	   String jsonData = postWebData(URI.create("http://capsule.net.tr/api/v1/account/valid.php"), 
 			"""
@@ -173,7 +187,6 @@ public class Util {
 			   return null;
 		   }
 		   Account account = new Account(userObject.getString("username"), apiKey);
-		   //account.setLogoURI(URI.create(userObject.getString("avatar")));
 		   
 		   return account;
 	   } else {
