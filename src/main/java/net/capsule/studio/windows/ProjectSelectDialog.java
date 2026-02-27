@@ -8,7 +8,7 @@ import net.capsule.studio.GameData;
 import net.capsule.studio.StudioPanel;
 import net.capsule.studio.windows.clone.CloneProjectDialog;
 import net.capsule.util.ImagePanel;
-import net.capsule.util.Util;
+import net.capsule.Capsule;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -53,8 +53,8 @@ public class ProjectSelectDialog extends JDialog {
 		flowLayout.setAlignment(FlowLayout.LEFT);
 		getContentPane().add(titleBar, BorderLayout.NORTH);
 		
-		BufferedImage img = Util.getImageWeb(URI.create("http://capsule.net.tr/CapsuleStudioLogo.png"));
-		JPanel studioLogo = new ImagePanel(Util.scaleImage(img, 251, 51));
+		BufferedImage img = Capsule.instance.getImageUtil().getImageWeb(URI.create("http://capsule.net.tr/CapsuleStudioLogo.png"));
+		JPanel studioLogo = new ImagePanel(Capsule.instance.getImageUtil().scaleImage(img, 251, 51));
 		titleBar.add(studioLogo);
 		
 		JLabel lblNewLabel = new JLabel("Welcome to Studio 2.0");
@@ -79,7 +79,7 @@ public class ProjectSelectDialog extends JDialog {
 				try {
 					data = dialog.getData();
 				} catch (InterruptedException | ExecutionException e1) {
-					e1.printStackTrace();
+					JOptionPane.showMessageDialog(frame, "Error: " + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 					return;
 				}
 				dispose();
@@ -99,7 +99,6 @@ public class ProjectSelectDialog extends JDialog {
 					data = GameData.loadProject(file);
 				} catch ( ReflectiveOperationException | IOException e1) {
 					JOptionPane.showMessageDialog(frame, "Error: " + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-					e1.printStackTrace();
 					return;
 				}
 				

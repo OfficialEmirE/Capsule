@@ -7,7 +7,7 @@ import me.ramazanenescik04.diken.gui.window.OptionWindow;
 import me.ramazanenescik04.diken.resource.Bitmap;
 import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.game.GameScreen;
-import net.capsule.util.Util;
+import net.capsule.CapsuleException;
 
 public class GameLoadingScreen extends Screen {
 	
@@ -28,11 +28,19 @@ public class GameLoadingScreen extends Screen {
 		this.getContentPane().add(loadingBar);
 		//End: Download Game
 		Thread.startVirtualThread(() -> {
-			World theWorld = Util.downloadGame(Capsule.instance.account.getApiKey().toString(), gameData, (progressData) -> {
+			World theWorld;
+			try {
+				theWorld = Capsule.instance.getApiClient().downloadGame(Capsule.instance.account.getApiKey().toString(), gameData, (progressData) -> {
 				this.loadingBar.text = progressData.toString();
 				this.loadingBar.value = progressData.percent();
 				this.progressString = "Loading Game - " + progressData.progressName();
-			});
+				});
+			} catch (CapsuleException e) {
+				this.progressString = "Loading Game - " + e.getMessage();
+				OptionWindow.showMessageNoWait(this.progressString, "Error", OptionWindow.ERROR_MESSAGE, 0, null);
+				this.engine.setCurrentScreen(null);
+				return;
+			}
 			
 			if (theWorld == null) {
 				OptionWindow.showMessageNoWait(this.progressString, "Error", OptionWindow.ERROR_MESSAGE, 0, (_) -> System.exit(9));

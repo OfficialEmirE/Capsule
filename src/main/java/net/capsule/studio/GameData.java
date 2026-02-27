@@ -8,9 +8,11 @@ import java.util.Objects;
 import org.json.JSONObject;
 
 import me.ramazanenescik04.diken.game.*;
+import net.capsule.Capsule;
+import net.capsule.CapsuleException;
 import net.capsule.account.Account;
 import net.capsule.studio.EditorUtil.EditorMode;
-import net.capsule.util.Util;
+import net.capsule.util.PathUtil;
 
 public class GameData {
 	public final String gameName;
@@ -26,7 +28,7 @@ public class GameData {
 	public void publish(Account yourAccount, int gameID) throws Exception {
 		saveWorld();
 		
-		Util.uploadGame(gameID + "", yourAccount.getApiKey().toString(), worldPath);
+		Capsule.instance.getApiClient().uploadGame(gameID + "", yourAccount.getApiKey().toString(), worldPath);
 	}
 	
 	public void publish(Account yourAccount) throws Exception {
@@ -36,10 +38,10 @@ public class GameData {
 		createGameData.put("desc", "Auto Created Game");
 		createGameData.put("image_url", "");
 		
-		var game = new JSONObject(Util.postWebData(URI.create("http://capsule.net.tr/api/v1/games/create.php"), createGameData.toString()));
+		var game = new JSONObject(Capsule.instance.getApiClient().postWebData(URI.create("http://capsule.net.tr/api/v1/games/create.php"), createGameData.toString()));
 		
 		if (!game.getString("status").equals("success")) {
-			throw new RuntimeException("Error! API Problem: " + game.getString("message"));
+			throw new CapsuleException("Error! API Problem: " + game.getString("message"));
 		}
 		
 		publish(yourAccount, game.getJSONObject("game").getInt("id"));
@@ -58,7 +60,7 @@ public class GameData {
 		Objects.requireNonNull(path);
 		
 		if (path.isDirectory())
-			throw new RuntimeException("path not Directory");
+			throw new CapsuleException("path not Directory");
 		
 		GameData data = new GameData(name, path);
 		data.theWorld = new World(name, 100, 100);
@@ -70,9 +72,9 @@ public class GameData {
 		Objects.requireNonNull(path);
 		
 		if (path.isDirectory() && !path.exists())
-			throw new RuntimeException("path not Directory");
+			throw new CapsuleException("path not Directory");
 		
-		GameData data = new GameData(Util.getFileNameWithoutExtension(path), path);
+		GameData data = new GameData(PathUtil.getFileNameWithoutExtension(path), path);
 		data.theWorld = World.loadWorld(path);
 		
 		return data;
@@ -82,12 +84,18 @@ public class GameData {
 		Objects.requireNonNull(savePath);
 		
 		if (savePath.isDirectory())
-			throw new RuntimeException("path not Directory");
+			throw new CapsuleException("path not Directory");
 		
-		var game = new JSONObject(Util.getWebData(URI.create("http://capsule.net.tr/api/v1/games/?id=" + gameID)));
+		String gameJsonData;
+		try {
+			gameJsonData = Capsule.instance.getApiClient().getWebData(URI.create("http://capsule.net.tr/api/v1/games/?id=" + gameID));
+		} catch (IOException | InterruptedException e) {
+			throw new CapsuleException("Unable to fetch game metadata", e);
+		}
+		var game = new JSONObject(gameJsonData);
 		
 		if (!game.getString("status").equals("success")) {
-			throw new RuntimeException("Error! API Problem: " + game.getString("message"));
+			throw new CapsuleException("Error! API Problem: " + game.getString("message"));
 		}
 		
 		GameData data = new GameData(game.getJSONObject("data").getString("title"), savePath);
@@ -95,10 +103,10 @@ public class GameData {
 		URI gameUri = URI.create("http://capsule.net.tr/api/v1/games/getdata.php?id=" + gameID + "&apiKey=" + yourAccount.getApiKey().toString());
 		   
 		try {
-			Util.downloadFile(gameUri, savePath, null);
+			Capsule.instance.getApiClient().downloadFile(gameUri, savePath, null);
 			data.theWorld = World.loadWorld(savePath);
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new CapsuleException("Unable to clone web project", e);
 		}
 		
 		return data;

@@ -11,6 +11,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -23,7 +24,6 @@ import javax.swing.UIManager;
 import org.json.JSONObject;
 
 import me.ramazanenescik04.diken.DikenEngine;
-import me.ramazanenescik04.diken.SystemInfo;
 import me.ramazanenescik04.diken.game.Animation;
 import me.ramazanenescik04.diken.game.Config;
 import me.ramazanenescik04.diken.gui.window.OptionWindow;
@@ -290,7 +290,6 @@ public class Capsule {
             String arg = args[i];
 
             if (arg.startsWith("--")) {
-                // --key=value veya --key value
                 String key = arg.substring(2);
                 String value = "";
 
@@ -299,13 +298,11 @@ public class Capsule {
                     key = parts[0];
                     value = parts[1];
                 } else if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
-                    value = args[++i]; // sonraki argüman value oluyor
+                    value = args[++i];
                 }
 
                 options.put(key, value);
-
             } else if (arg.startsWith("-")) {
-                // -a veya -a value
                 String key = arg.substring(1);
                 String value = "";
 
@@ -319,53 +316,21 @@ public class Capsule {
 
         return options;
     }
-	
-	private void checkUpdate() {
-		var repoVersion = Capsule.version;
-		try {
-            HttpClient client = HttpClient.newHttpClient();
+
+    public static void log(String string) {
+        System.out.println("[Capsule] " + string);
+    }
+
+    public static JSONObject checkUpdate() {
+        try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://capsule.net.tr/api/v1/assets/check_update.php?name=capsule"))
-                    .header("Accept", "application/vnd.github+json")
-                    // .header("Authorization", "Bearer YOUR_TOKEN") // Hız sınırı için gerekebilir
-                    .build();
+                    .uri(new URI("https://capsule.net.tr/api/v1/checkversion.php?version=" + version.toString()))
+                    .GET().build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200) {
-                // JSON Ayrıştırma
-                JSONObject jsonResponse = new JSONObject(response.body());
-
-                // 1. Tag ismini al
-                String tagName = jsonResponse.getString("tag_name");
-                repoVersion = new Version(tagName);
-            } else {
-            	errorLog("Failed to check for updates. HTTP Status: " + response.statusCode());
-            }
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            return new JSONObject(response.body());
         } catch (Exception e) {
-            e.printStackTrace();
-            ConsoleLog.sendLog("Error: " + e.getMessage());
+            return null;
         }
-		
-		if (repoVersion.compareTo(Capsule.version) > 0) {
-			OptionWindow.showMessageNoWait("Update Available! Please restart Capsule.\n" + Capsule.version + " -> " + repoVersion, "Warning", OptionWindow.WARNING_MESSAGE, 0, null);
-		}
-	}
-	
-	public static void log(String message) {
-		System.out.println("[Capsule] " + message);
-		ConsoleLog.sendLog(message);
-	}
-	
-	public static void errorLog(String message) {
-		System.err.println("[Capsule] " + message);
-		ConsoleLog.sendLog(ConsoleLog.LogType.ERROR, message);
-	}
-	
-	static {
-		Bitmap capsuleLogo = (Bitmap) IOResource.loadResource(Capsule.class.getResourceAsStream("/title.png"), EnumResource.IMAGE);
-		ResourceLocator.addResource(new ResourceLocator.ResourceKey("capsule", "logo"), capsuleLogo);
-		
-		loadResources();
-	}
+    }
 }
