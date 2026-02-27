@@ -7,6 +7,8 @@ import java.net.URI;
 
 import javax.swing.JPanel;
 
+import net.capsule.Capsule;
+
 public class ImagePanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 	
@@ -18,7 +20,7 @@ public class ImagePanel extends JPanel {
 	}
 	
 	public ImagePanel(URI imageURI) {
-		this.image = Util.getImageWeb(imageURI);
+		this.image = Capsule.instance.getImageUtil().getImageWeb(imageURI);
 		setPreferredSize(new java.awt.Dimension(image.getWidth(), image.getHeight()));
 	}
 	

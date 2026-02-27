@@ -10,7 +10,7 @@ import me.ramazanenescik04.diken.gui.compoment.LinkButton;
 import me.ramazanenescik04.diken.gui.compoment.LinkText;
 import me.ramazanenescik04.diken.gui.compoment.Panel;
 import me.ramazanenescik04.diken.resource.Bitmap;
-import net.capsule.util.Util;
+import net.capsule.Capsule;
 
 public class CapsuleGame extends Panel {
 	
@@ -66,7 +66,7 @@ public class CapsuleGame extends Panel {
 		this(new Bitmap(64, 64), gameId, gameName, authorUsername);
 		
 		Thread.startVirtualThread(() -> {
-			icon = Bitmap.toBitmap(Util.getImageWeb(logoURI));
+			icon = Bitmap.toBitmap(Capsule.instance.getImageUtil().getImageWeb(logoURI));
 		});
 	}
 	
@@ -74,7 +74,7 @@ public class CapsuleGame extends Panel {
 		this(new Bitmap(64, 64), gameId, gameName, authorUsername);
 		
 		Thread.startVirtualThread(() -> {
-			icon = Bitmap.toBitmap(Util.getImageWeb(logoURL));
+			icon = Bitmap.toBitmap(Capsule.instance.getImageUtil().getImageWeb(logoURL));
 		});
 	}
 	

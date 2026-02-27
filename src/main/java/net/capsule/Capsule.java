@@ -22,7 +22,6 @@ import javax.swing.UIManager;
 import org.json.JSONObject;
 
 import me.ramazanenescik04.diken.DikenEngine;
-import me.ramazanenescik04.diken.SystemInfo;
 import me.ramazanenescik04.diken.game.Animation;
 import me.ramazanenescik04.diken.game.Config;
 import me.ramazanenescik04.diken.gui.window.OptionWindow;
@@ -36,7 +35,9 @@ import me.ramazanenescik04.diken.resource.ResourceLocator;
 import net.capsule.account.Account;
 import net.capsule.gui.DockView;
 import net.capsule.studio.*;
-import net.capsule.util.Util;
+import net.capsule.util.CapsuleApiClient;
+import net.capsule.util.ImageUtil;
+import net.capsule.util.StoragePaths;
 
 public class Capsule {
 	public static final Version version = new Version("0.4.0");
@@ -45,8 +46,15 @@ public class Capsule {
 	public Account account;
 	public DikenEngine gameEngine;
 	public JFrame gameFrame;
+	private final StoragePaths storagePaths;
+	private final CapsuleApiClient apiClient;
+	private final ImageUtil imageUtil;
 	
-	public Capsule() {				
+	public Capsule(StoragePaths storagePaths, CapsuleApiClient apiClient, ImageUtil imageUtil) {
+		this.storagePaths = storagePaths;
+		this.apiClient = apiClient;
+		this.imageUtil = imageUtil;
+		
 		account = Account.getAccountLocalFile();
 		
 		gameEngine = new DikenEngine(320 * 4, 240 * 4, 2);
@@ -88,18 +96,15 @@ public class Capsule {
 	
 	public static void main(String[] args) {
 		log("Starting Capsule " + version);
+		StoragePaths storagePaths = new StoragePaths();
+		CapsuleApiClient apiClient = new CapsuleApiClient(storagePaths);
+		ImageUtil imageUtil = new ImageUtil();
 		try {
-			if (SystemInfo.instance.getOS() == SystemInfo.OS.LINUX) {
-			   Util.findLinuxHomeDirectory();
-			}
 			
-			String install_directory = Util.getDirectory();
-			String log_directory = Util.getDirectory() + "logs/";
-			String game_installed_directory = Util.getDirectory() + "cache/";
-			File inst_dir = new File(install_directory);
-			File log_dir = new File(log_directory);
-			File game_dir = new File(game_installed_directory);
-			File versions_dir = new File(Util.getDirectory() + "versions/");
+			File inst_dir = storagePaths.getDirectoryPath().toFile();
+			File log_dir = storagePaths.getLogsPath().toFile();
+			File game_dir = storagePaths.getCachePath().toFile();
+			File versions_dir = storagePaths.getVersionsPath().toFile();
 			if (!inst_dir.exists()) {
 				inst_dir.mkdir();
 			}
@@ -116,14 +121,14 @@ public class Capsule {
 				versions_dir.mkdir();
 			}
 			
-			Config.defaultConfigFile = new File(Util.getDirectory(), "config.dat");
+			Config.defaultConfigFile = storagePaths.getDirectoryPath().resolve("config.dat").toFile();
 			ConsoleLog.setLogDirectory(log_dir);
 		} catch (Exception var10) {
 			var10.printStackTrace();
 			System.exit(1);
 		}
 		
-		instance = new Capsule();
+		instance = new Capsule(storagePaths, apiClient, imageUtil);
 		Map<String, String> argMap = parseArgs(args);
 		
 		if (argMap.containsKey("apikey")) {
@@ -131,7 +136,7 @@ public class Capsule {
 			
 			Account account_1 = null;
 			try {
-				account_1 = Util.login(UUID.fromString(apikey));
+				account_1 = apiClient.login(UUID.fromString(apikey));
 			} catch (IOException | InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -158,7 +163,8 @@ public class Capsule {
 				gameID = Integer.parseInt(value);
 			}
 			
-			if (!Util.IsThisGameYours(gameID, instance.account)) {
+			try {
+			if (!instance.apiClient.isThisGameYours(gameID, instance.account)) {
 				OptionWindow.showMessage("Düzenlemeye çalıştığınız oyun size ait değil! Lütfen kendi oyununuzu düzenleyin!", "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
 				System.exit(-1);
 			} else {
@@ -173,7 +179,7 @@ public class Capsule {
 						frame.addWindowListener(new WindowAdapter() {
 							@Override
 							public void windowClosing(WindowEvent e) {
-								File layoutFile = new File(Util.getDirectory() + "layout.xml");
+								File layoutFile = instance.storagePaths.getDirectoryPath().resolve("layout.xml").toFile();
 								DockView.saveLayout(window.control, layoutFile);
 								
 								try {
@@ -196,6 +202,10 @@ public class Capsule {
 				});
 				//Capsule.instance.gameEngine.setCurrentScreen(new WorldEditor(gameID));
 			}
+			} catch (IOException | InterruptedException e) {
+				OptionWindow.showMessage("Oyun sahipliği doğrulanamadı: " + e.getMessage(), "Error", OptionWindow.ERROR_MESSAGE, OptionWindow.OK_BUTTON);
+				System.exit(-1);
+			}
 		} else {
 			if (argMap.containsKey("game")) {
 				String id = argMap.get("game");
@@ -213,6 +223,19 @@ public class Capsule {
 		}
 	}
 	
+
+	public StoragePaths getStoragePaths() {
+		return storagePaths;
+	}
+
+	public CapsuleApiClient getApiClient() {
+		return apiClient;
+	}
+
+	public ImageUtil getImageUtil() {
+		return imageUtil;
+	}
+
 	public static void loadResources() {
 		Bitmap def_body = (Bitmap)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/body.png"), EnumResource.IMAGE);
 		Bitmap def_hand = (Bitmap)IOResource.loadResource(Capsule.class.getResourceAsStream("/default_c3/hand.png"), EnumResource.IMAGE);

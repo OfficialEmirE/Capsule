@@ -9,7 +9,6 @@ import net.capsule.gui.DockView;
 import net.capsule.gui.ViewRegistry;
 import net.capsule.studio.windows.ProjectSelectDialog;
 import net.capsule.studio.windows.SceneView;
-import net.capsule.util.Util;
 
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
@@ -103,7 +102,7 @@ public class StudioPanel extends JPanel {
 		    });
 	    }
 
-	    File layoutFile = new File(Util.getDirectory() + "layout.xml");
+	    File layoutFile = Capsule.instance.getStoragePaths().getDirectoryPath().resolve("layout.xml").toFile();
 
 	    if (layoutFile.exists()) {
 	        // ✅ DOĞRU YER
